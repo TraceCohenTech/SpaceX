@@ -6,187 +6,235 @@
 
 :root {
   --background: #000000;
-  --foreground: #ffffff;
-  --white-100: rgba(255, 255, 255, 1);
-  --white-90: rgba(255, 255, 255, 0.9);
-  --white-80: rgba(255, 255, 255, 0.8);
-  --white-70: rgba(255, 255, 255, 0.7);
-  --white-60: rgba(255, 255, 255, 0.6);
-  --white-50: rgba(255, 255, 255, 0.5);
-  --white-35: rgba(255, 255, 255, 0.35);
-  --white-25: rgba(255, 255, 255, 0.25);
-  --white-15: rgba(255, 255, 255, 0.15);
-  --white-10: rgba(255, 255, 255, 0.1);
-  --white-05: rgba(255, 255, 255, 0.05);
+  --foreground: #f1f5f9;
+  --blue: #3b82f6;
+  --cyan: #22d3ee;
+  --green: #10b981;
+  --orange: #f97316;
+  --red: #ef4444;
+  --yellow: #eab308;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
-  color: var(--white-90);
+  color: var(--foreground);
   background: var(--background);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* SpaceX-style sections */
+/* ── Hero ── */
 .hero-section {
   position: relative;
   min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: #000;
   overflow: hidden;
 }
 
 .hero-section::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7));
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.75));
   z-index: 1;
 }
 
 .hero-bg {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
-/* Card */
+/* ── Cards ── */
 .card {
-  background: var(--white-05);
-  border: 1px solid var(--white-10);
-  border-radius: 2px;
-  transition: all 0.3s ease;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.12);
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:hover {
-  border-color: var(--white-25);
-  background: var(--white-10);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.08), 0 8px 32px rgba(0,0,0,0.3);
+  transform: translateY(-2px);
 }
 
-/* Section divider */
-.section-divider {
+/* ── Stat cards ── */
+.stat-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.1);
+  transform: translateY(-3px);
+}
+
+/* ── Glow text ── */
+.gradient-text {
+  background: linear-gradient(135deg, #60a5fa, #22d3ee, #ffffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-glow {
+  text-shadow: 0 0 60px rgba(59, 130, 246, 0.25);
+}
+
+/* ── Accent rule ── */
+.accent-rule {
   height: 1px;
-  background: var(--white-10);
-  margin: 0 auto;
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.25), rgba(34, 211, 238, 0.15), transparent);
 }
 
-/* Stat highlight */
-.stat-value {
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
+/* ── Tag ── */
+.tag {
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 100px;
+  color: #22d3ee;
+  background: rgba(34, 211, 238, 0.08);
 }
 
-/* SpaceX-style horizontal rule */
-.spacex-rule {
-  height: 1px;
-  background: linear-gradient(to right, transparent, var(--white-25), transparent);
+/* ── Table ── */
+.sx-table th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  font-weight: 500;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+  text-align: left;
+  white-space: nowrap;
 }
 
-/* Scrollbar — minimal */
-::-webkit-scrollbar {
-  width: 4px;
+.sx-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: #cbd5e1;
+  font-size: 0.875rem;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+.sx-table tr {
+  transition: background 0.2s;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--white-15);
-  border-radius: 2px;
+.sx-table tr:hover td {
+  background: rgba(59, 130, 246, 0.05);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--white-25);
-}
-
-/* Animations */
+/* ── Animations ── */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.08); }
+  50% { box-shadow: 0 0 30px rgba(34, 211, 238, 0.15); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
 .fade-in-up {
-  animation: fadeInUp 1s ease-out forwards;
+  animation: fadeInUp 0.8s ease-out forwards;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
 }
 
-.fade-in {
-  animation: fadeIn 1.5s ease-out forwards;
-}
+.delay-1 { animation-delay: 0.15s; opacity: 0; }
+.delay-2 { animation-delay: 0.3s; opacity: 0; }
+.delay-3 { animation-delay: 0.45s; opacity: 0; }
+.delay-4 { animation-delay: 0.6s; opacity: 0; }
+.delay-5 { animation-delay: 0.75s; opacity: 0; }
+.delay-6 { animation-delay: 0.9s; opacity: 0; }
 
-.delay-1 { animation-delay: 0.2s; opacity: 0; }
-.delay-2 { animation-delay: 0.4s; opacity: 0; }
-.delay-3 { animation-delay: 0.6s; opacity: 0; }
-.delay-4 { animation-delay: 0.8s; opacity: 0; }
-.delay-5 { animation-delay: 1.0s; opacity: 0; }
-.delay-6 { animation-delay: 1.2s; opacity: 0; }
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.25); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(59,130,246,0.4); }
 
-/* Tag pill */
-.tag {
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  padding: 4px 12px;
-  border: 1px solid var(--white-25);
-  border-radius: 1px;
-  color: var(--white-70);
-  display: inline-block;
-}
-
-/* Table */
-.spacex-table th {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--white-50);
-  font-weight: 500;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--white-10);
-  text-align: left;
-}
-
-.spacex-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--white-05);
-  color: var(--white-80);
-  font-size: 0.875rem;
-}
-
-.spacex-table tr:hover td {
-  background: var(--white-05);
-}
-
-/* Progress bar */
-.progress-bar {
-  height: 2px;
-  background: var(--white-10);
-  border-radius: 1px;
+/* ── Progress bar ── */
+.prog-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
   overflow: hidden;
 }
 
-.progress-fill {
-  height: 100%;
-  background: var(--white-70);
-  border-radius: 1px;
+/* ── IPO card grid ── */
+.ipo-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ipo-card:hover {
+  border-color: rgba(34, 211, 238, 0.3);
+  background: rgba(15, 23, 42, 0.85);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.06);
+}
+
+/* ── Timeline ── */
+.tl-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #000;
+  border: 2px solid #3b82f6;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.tl-dot::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: #3b82f6;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tl-item:hover .tl-dot {
+  border-color: #22d3ee;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.4);
+}
+
+.tl-item:hover .tl-dot::after {
+  opacity: 1;
+  background: #22d3ee;
+}
+
+/* ── Mobile tweaks ── */
+@media (max-width: 640px) {
+  .hero-section { min-height: 100svh; }
+  .sx-table { font-size: 0.8rem; }
+  .sx-table th, .sx-table td { padding: 10px 10px; }
 }
