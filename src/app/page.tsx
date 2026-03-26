@@ -103,17 +103,17 @@ const radarData = [
 
 const milestones = [
   { year: "2002", event: "Founded", desc: "Elon Musk invests $100M to start SpaceX" },
-  { year: "2008", event: "First Orbit", desc: "Falcon 1 \u2014 first private liquid rocket to orbit" },
+  { year: "2008", event: "First Orbit", desc: "Falcon 1 — first private liquid rocket to orbit" },
   { year: "2012", event: "ISS Docking", desc: "Dragon docks with the International Space Station" },
   { year: "2015", event: "First Landing", desc: "Falcon 9 booster lands upright for the first time" },
-  { year: "2017", event: "First Reflight", desc: "Orbital-class booster reused \u2014 proving reuse economics" },
+  { year: "2017", event: "First Reflight", desc: "Orbital-class booster reused — proving reuse economics" },
   { year: "2018", event: "Falcon Heavy", desc: "Tesla Roadster launched toward Mars orbit" },
   { year: "2020", event: "Crew to ISS", desc: "Demo-2: First commercial crewed orbital flight" },
   { year: "2021", event: "Inspiration4", desc: "First all-civilian orbital mission in history" },
   { year: "2023", event: "Starship Flies", desc: "Most powerful rocket ever lifts off from Starbase" },
   { year: "2024", event: "Tower Catch", desc: "Super Heavy caught by Mechazilla chopstick arms" },
-  { year: "2025", event: "167 Launches", desc: "Shatters own record \u2014 a launch every 2.2 days" },
-  { year: "2026", event: "IPO", desc: "Targeting $1.5T \u2014 the largest IPO in history" },
+  { year: "2025", event: "167 Launches", desc: "Shatters own record — a launch every 2.2 days" },
+  { year: "2026", event: "IPO", desc: "Targeting $1.5T — the largest IPO in history" },
 ];
 
 const vehicleFleet = [
@@ -183,7 +183,7 @@ export default function SpaceXDashboard() {
         <img src="https://live.staticflickr.com/65535/54098952498_5c8ec2a1e5_k.jpg" alt="Starship launch" className="hero-bg" />
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl w-full">
           <div className="fade-in-up delay-1">
-            <span className="tag mb-6 sm:mb-8 inline-block">June 2026 \u2014 IPO Filing Imminent</span>
+            <span className="tag mb-6 sm:mb-8 inline-block">June 2026 — IPO Filing Imminent</span>
           </div>
           <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter mb-4 sm:mb-6 fade-in-up delay-2 text-glow">
             <span className="gradient-text">SPACEX</span>
@@ -227,11 +227,11 @@ export default function SpaceXDashboard() {
       <Section title="IPO Overview" sub="SpaceX is preparing to file for the largest public offering in history, targeting a June 2026 listing">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {[
-            { label: "Target Valuation", value: "$1.5 \u2014 $1.75T", desc: "Most valuable IPO ever, surpassing Saudi Aramco\u2019s $1.7T debut in 2019", color: C.cyan },
-            { label: "Capital Raise", value: "$50 \u2014 $75B", desc: "Floating ~3.3% of equity. Funding Starship scale-up, Starlink expansion, and space-based data centers", color: C.blue },
-            { label: "Timeline", value: "June 2026", desc: "Mid-June target when Jupiter and Venus align \u2014 weeks before Musk turns 55", color: C.green },
+            { label: "Target Valuation", value: "$1.5 — $1.75T", desc: "Most valuable IPO ever, surpassing Saudi Aramco's $1.7T debut in 2019", color: C.cyan },
+            { label: "Capital Raise", value: "$50 — $75B", desc: "Floating ~3.3% of equity. Funding Starship scale-up, Starlink expansion, and space-based data centers", color: C.blue },
+            { label: "Timeline", value: "June 2026", desc: "Mid-June target when Jupiter and Venus align — weeks before Musk turns 55", color: C.green },
             { label: "2025 Revenue", value: "$15.5B", desc: "Starlink drove $10.6B (68% of total) with 54% EBITDA margins", color: C.orange },
-            { label: "2025 EBITDA", value: "$7.5B", desc: "Company-wide profitability driven by Starlink\u2019s $5.8B EBITDA contribution", color: C.yellow },
+            { label: "2025 EBITDA", value: "$7.5B", desc: "Company-wide profitability driven by Starlink's $5.8B EBITDA contribution", color: C.yellow },
             { label: "Starlink Subs", value: "9.2M", desc: "Doubled subscriber base two consecutive years. Analysts project 17M+ by end of 2026", color: C.cyan },
           ].map((item, i) => (
             <div key={i} className="ipo-card">
@@ -246,7 +246,7 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ LAUNCHES ══════ */}
-      <Section title="Launch History" sub="SpaceX\u2019s exponential launch cadence is the clearest proof of its operational dominance. The blue bars show total orbital launches per year, while the cyan line tracks successful booster landings \u2014 note how tightly the two converge as landing reliability approaches 98%.">
+      <Section title="Launch History" sub="SpaceX's exponential launch cadence is the clearest proof of its operational dominance. The blue bars show total orbital launches per year, while the cyan line tracks successful booster landings — note how tightly the two converge as landing reliability approaches 98%.">
         <div className="card p-4 sm:p-6 md:p-8">
           <ResponsiveContainer width="100%" height={360}>
             <ComposedChart data={launchData}>
@@ -259,14 +259,14 @@ export default function SpaceXDashboard() {
               <Line type="monotone" dataKey="landings" name="Successful Landings" stroke={C.cyan} strokeWidth={2.5} dot={{ fill: C.cyan, r: 2.5 }} />
             </ComposedChart>
           </ResponsiveContainer>
-          <ChartNote>2025 reflects 167 launches (full year) \u2014 a new record and a launch every ~2.2 days. SpaceX now conducts more orbital launches than every other country and company on Earth combined.</ChartNote>
+          <ChartNote>2025 reflects 167 launches (full year) — a new record and a launch every ~2.2 days. SpaceX now conducts more orbital launches than every other country and company on Earth combined.</ChartNote>
         </div>
       </Section>
 
       <div className="accent-rule" />
 
       {/* ══════ REVENUE ══════ */}
-      <Section title="Revenue Trajectory" sub="Two charts tell the IPO story: Starlink\u2019s takeover of revenue (left) and the parabolic valuation growth leading to the $1.5T target (right).">
+      <Section title="Revenue Trajectory" sub="Two charts tell the IPO story: Starlink's takeover of revenue (left) and the parabolic valuation growth leading to the $1.5T target (right).">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <div className="card p-4 sm:p-6">
             <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-2">Revenue Breakdown ($B)</h3>
@@ -296,7 +296,7 @@ export default function SpaceXDashboard() {
           </div>
           <div className="card p-4 sm:p-6">
             <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-2">Valuation Growth ($B)</h3>
-            <p className="text-xs text-slate-600 mb-4">Each point represents a funding round or tender offer. Note the hockey-stick from $350B (Dec 2024) to the $1.5T IPO target \u2014 a 4.3x jump.</p>
+            <p className="text-xs text-slate-600 mb-4">Each point represents a funding round or tender offer. Note the hockey-stick from $350B (Dec 2024) to the $1.5T IPO target — a 4.3x jump.</p>
             <ResponsiveContainer width="100%" height={320}>
               <AreaChart data={valuationData}>
                 <defs>
@@ -323,7 +323,7 @@ export default function SpaceXDashboard() {
       <div className="relative">
         <img src="https://live.staticflickr.com/65535/53378726498_e55a2b2f9e_k.jpg" alt="Starlink" className="absolute inset-0 w-full h-full object-cover opacity-[0.12]" />
         <div className="relative">
-          <Section title="Starlink" sub="The world\u2019s largest satellite constellation and the primary revenue engine behind the IPO. Starlink has doubled its subscriber base for two consecutive years and shows no signs of slowing.">
+          <Section title="Starlink" sub="The world's largest satellite constellation and the primary revenue engine behind the IPO. Starlink has doubled its subscriber base for two consecutive years and shows no signs of slowing.">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
               {[
                 { val: "9.2M", label: "Subscribers", sub: "Doubled 2 years running", color: C.green },
@@ -341,7 +341,7 @@ export default function SpaceXDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="card bg-black/50 backdrop-blur-md p-4 sm:p-6">
                 <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-2">Constellation Size</h3>
-                <p className="text-xs text-slate-600 mb-4">Total Starlink satellites launched per year. SpaceX surpassed 10,000 satellites in orbit in October 2025 \u2014 more than all other operators combined.</p>
+                <p className="text-xs text-slate-600 mb-4">Total Starlink satellites launched per year. SpaceX surpassed 10,000 satellites in orbit in October 2025 — more than all other operators combined.</p>
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={starlinkGrowth}>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
@@ -373,7 +373,7 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ VEHICLE FLEET ══════ */}
-      <Section title="Vehicle Fleet" sub="Four vehicles powering humanity\u2019s expansion into space. Hover each card for details. Falcon 9 is the workhorse; Starship is the future.">
+      <Section title="Vehicle Fleet" sub="Four vehicles powering humanity's expansion into space. Hover each card for details. Falcon 9 is the workhorse; Starship is the future.">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {vehicleFleet.map((v, i) => (
             <div key={i} className="card p-5 sm:p-6 group" style={{ borderColor: `${v.color}15` }}>
@@ -398,7 +398,7 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ BOOSTER REUSE ══════ */}
-      <Section title="Reuse Leaderboard" sub="Each bar represents the number of times a single Falcon 9 first-stage booster has flown and landed. B1067 holds the record at 33 flights \u2014 proving that orbital-class rockets can be reflown like aircraft.">
+      <Section title="Reuse Leaderboard" sub="Each bar represents the number of times a single Falcon 9 first-stage booster has flown and landed. B1067 holds the record at 33 flights — proving that orbital-class rockets can be reflown like aircraft.">
         <div className="card p-4 sm:p-6 md:p-8">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={boosterReuse} layout="vertical" margin={{ left: 5 }}>
@@ -413,7 +413,7 @@ export default function SpaceXDashboard() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <ChartNote>Every reflight amortizes the ~$60M booster cost further, driving Falcon 9 marginal launch costs to an estimated $15M \u2014 a fraction of any competitor.</ChartNote>
+          <ChartNote>Every reflight amortizes the ~$60M booster cost further, driving Falcon 9 marginal launch costs to an estimated $15M — a fraction of any competitor.</ChartNote>
         </div>
       </Section>
 
@@ -462,11 +462,11 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ COMPETITIVE ══════ */}
-      <Section title="Competitive Landscape" sub="The area chart (left) shows SpaceX\u2019s growing share of global orbital launches. The radar chart (right) indexes six capability dimensions on a 0\u2013100 scale, with SpaceX normalized to 100.">
+      <Section title="Competitive Landscape" sub="The area chart (left) shows SpaceX's growing share of global orbital launches. The radar chart (right) indexes six capability dimensions on a 0\u2013100 scale, with SpaceX normalized to 100.">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
           <div className="card p-4 sm:p-6">
             <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-2">Global Launch Market Share (%)</h3>
-            <p className="text-xs text-slate-600 mb-4">Percentage of all orbital launches worldwide. SpaceX crossed 50% in 2024 \u2014 more launches than every other entity on Earth combined.</p>
+            <p className="text-xs text-slate-600 mb-4">Percentage of all orbital launches worldwide. SpaceX crossed 50% in 2024 — more launches than every other entity on Earth combined.</p>
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={marketShareData}>
                 <defs>
@@ -563,7 +563,7 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ IPO COMPS ══════ */}
-      <Section title="Valuation Comps" sub="This chart compares SpaceX\u2019s implied revenue multiple at its $1.5T IPO target against other notable tech and mega-IPOs. The cyan bar is SpaceX; grey bars are comparables.">
+      <Section title="Valuation Comps" sub="This chart compares SpaceX's implied revenue multiple at its $1.5T IPO target against other notable tech and mega-IPOs. The cyan bar is SpaceX; grey bars are comparables.">
         <div className="card p-4 sm:p-6 md:p-8">
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={ipoCompsData}>
@@ -578,26 +578,26 @@ export default function SpaceXDashboard() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <ChartNote>At ~97x revenue ($1.5T / $15.5B), SpaceX would carry the richest multiple of any mega-IPO in history. The premium reflects Starlink\u2019s growth trajectory and Starship\u2019s optionality. Aramco and Uber multiples are at IPO date; Palantir and RKLB are current market values.</ChartNote>
+          <ChartNote>At ~97x revenue ($1.5T / $15.5B), SpaceX would carry the richest multiple of any mega-IPO in history. The premium reflects Starlink's growth trajectory and Starship's optionality. Aramco and Uber multiples are at IPO date; Palantir and RKLB are current market values.</ChartNote>
         </div>
       </Section>
 
       <div className="accent-rule" />
 
       {/* ══════ STARSHIP TESTS ══════ */}
-      <Section title="Starship Flight Tests" sub="Each row tracks a Starship Integrated Flight Test (IFT). Color-coded results show SpaceX\u2019s iterate-fast approach \u2014 progressing from total failure to orbital flight and booster catch in under two years.">
+      <Section title="Starship Flight Tests" sub="Each row tracks a Starship Integrated Flight Test (IFT). Color-coded results show SpaceX's iterate-fast approach — progressing from total failure to orbital flight and booster catch in under two years.">
         <div className="card overflow-x-auto">
           <table className="w-full sx-table min-w-[480px]">
             <thead><tr>{["Flight", "Date", "Result", "Milestone"].map((h) => <th key={h}>{h}</th>)}</tr></thead>
             <tbody>
               {[
-                { f: "IFT-1", d: "Apr 2023", r: "FAILURE", c: C.red, detail: "FTS activated at T+4 min \u2014 vehicle tumbled after liftoff" },
+                { f: "IFT-1", d: "Apr 2023", r: "FAILURE", c: C.red, detail: "FTS activated at T+4 min — vehicle tumbled after liftoff" },
                 { f: "IFT-2", d: "Nov 2023", r: "PARTIAL", c: C.yellow, detail: "First successful stage separation achieved" },
-                { f: "IFT-3", d: "Mar 2024", r: "PARTIAL", c: C.yellow, detail: "Reached space \u2014 valuable re-entry data collected" },
-                { f: "IFT-4", d: "Jun 2024", r: "SUCCESS", c: C.green, detail: "Both stages survived \u2014 first full-profile flight" },
+                { f: "IFT-3", d: "Mar 2024", r: "PARTIAL", c: C.yellow, detail: "Reached space — valuable re-entry data collected" },
+                { f: "IFT-4", d: "Jun 2024", r: "SUCCESS", c: C.green, detail: "Both stages survived — first full-profile flight" },
                 { f: "IFT-5", d: "Oct 2024", r: "HISTORIC", c: C.cyan, detail: "Super Heavy caught by Mechazilla tower arms" },
                 { f: "IFT-6", d: "Nov 2024", r: "SUCCESS", c: C.green, detail: "Ship orbited, in-space Raptor relight, controlled splashdown" },
-                { f: "IFT-7", d: "Jan 2025", r: "FAILURE", c: C.red, detail: "Propellant leak \u2014 Ship lost over Turks & Caicos, booster catch aborted" },
+                { f: "IFT-7", d: "Jan 2025", r: "FAILURE", c: C.red, detail: "Propellant leak — Ship lost over Turks & Caicos, booster catch aborted" },
               ].map((fl, i) => (
                 <tr key={i}>
                   <td className="font-mono text-white font-semibold">{fl.f}</td>
@@ -608,14 +608,14 @@ export default function SpaceXDashboard() {
               ))}
             </tbody>
           </table>
-          <ChartNote>Starship is the most powerful rocket ever built: 33 Raptor engines producing 16.7 million lbf of thrust at liftoff \u2014 roughly 2x the Saturn V. The rapid test cadence reflects SpaceX\u2019s hardware-rich development philosophy.</ChartNote>
+          <ChartNote>Starship is the most powerful rocket ever built: 33 Raptor engines producing 16.7 million lbf of thrust at liftoff — roughly 2x the Saturn V. The rapid test cadence reflects SpaceX's hardware-rich development philosophy.</ChartNote>
         </div>
       </Section>
 
       <div className="accent-rule" />
 
       {/* ══════ TIMELINE ══════ */}
-      <Section title="The SpaceX Story" sub="Key milestones across 24 years \u2014 from a startup with three failed launches to the most valuable private company on Earth. Hover over each milestone for details.">
+      <Section title="The SpaceX Story" sub="Key milestones across 24 years — from a startup with three failed launches to the most valuable private company on Earth. Hover over each milestone for details.">
         <div className="relative">
           <div className="absolute left-[5px] md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-blue-500/30 to-transparent md:-translate-x-px" />
           <div className="space-y-5 sm:space-y-6">
@@ -641,7 +641,7 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ BY THE NUMBERS ══════ */}
-      <Section title="By The Numbers" sub="The headline stats that define SpaceX\u2019s extraordinary scale and trajectory.">
+      <Section title="By The Numbers" sub="The headline stats that define SpaceX's extraordinary scale and trajectory.">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {[
             { val: "24", unit: "years", label: "Founding to largest IPO ever" },
@@ -650,7 +650,7 @@ export default function SpaceXDashboard() {
             { val: "550+", unit: "", label: "Successful booster landings" },
             { val: "2.2", unit: "days", label: "Avg between launches (2025)" },
             { val: "~70", unit: "", label: "Humans launched to orbit" },
-            { val: "121", unit: "m", label: "Starship \u2014 tallest rocket ever" },
+            { val: "121", unit: "m", label: "Starship — tallest rocket ever" },
             { val: "16.7M", unit: "lbf", label: "Super Heavy liftoff thrust" },
             { val: "17K", unit: "+", label: "SpaceX employees" },
             { val: "52", unit: "%", label: "Global launch market share" },
@@ -676,7 +676,7 @@ export default function SpaceXDashboard() {
             { tag: "BULL", title: "Starlink Dominance", desc: "9.2M subs, 54% EBITDA margins, doubling annually. T-Mobile direct-to-cell expands TAM to billions of potential users.", color: C.green },
             { tag: "BULL", title: "Monopoly on Reuse", desc: "No competitor has demonstrated orbital-class reuse at scale. 33 flights on one booster. Margins widen every reflight.", color: C.green },
             { tag: "BULL", title: "Starship Unlocks Everything", desc: "Space data centers, Mars missions, point-to-point transport, mega-constellation deployment. $67/kg to LEO changes the economics of space.", color: C.green },
-            { tag: "BEAR", title: "Key-Person Risk", desc: "Musk simultaneously leads two $1T+ companies plus DOGE. \u201CMost divisive stock to join the market\u201D \u2014 AJ Bell.", color: C.red },
+            { tag: "BEAR", title: "Key-Person Risk", desc: "Musk simultaneously leads two $1T+ companies plus DOGE. "Most divisive stock to join the market" — AJ Bell.", color: C.red },
             { tag: "BEAR", title: "97x Revenue Multiple", desc: "Richest multiple of any mega-IPO in history. Requires sustained hypergrowth and flawless Starship execution to justify.", color: C.red },
             { tag: "BEAR", title: "Macro & Regulatory", desc: "Unfiled S-1, global roadshow logistics, tariff uncertainty, rate jitters, and international spectrum regulation challenges.", color: C.red },
           ].map((card, i) => (
