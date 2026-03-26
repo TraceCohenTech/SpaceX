@@ -180,7 +180,7 @@ export default function SpaceXDashboard() {
 
       {/* ══════ HERO ══════ */}
       <div className="hero-section">
-        <img src="https://live.staticflickr.com/65535/54098952498_5c8ec2a1e5_k.jpg" alt="Starship launch" className="hero-bg" />
+        <img src="https://i.redd.it/2r38gq2b2bg31.jpg" alt="SpaceX rocket launch" className="hero-bg" />
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl w-full">
           <div className="fade-in-up delay-1">
             <span className="tag mb-6 sm:mb-8 inline-block">June 2026 — IPO Filing Imminent</span>
@@ -578,7 +578,7 @@ export default function SpaceXDashboard() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <ChartNote>At ~97x revenue ($1.5T / $15.5B), SpaceX would carry the richest multiple of any mega-IPO in history. The premium reflects Starlink's growth trajectory and Starship's optionality. Aramco and Uber multiples are at IPO date; Palantir and RKLB are current market values.</ChartNote>
+          <ChartNote>At ~97x revenue ($1.5T / $15.5B), SpaceX would carry the richest multiple of any mega-IPO in history. The premium reflects Starlink&apos;s growth trajectory and Starship&apos;s optionality. Aramco and Uber multiples are at IPO date; Palantir and RKLB are current market values.</ChartNote>
         </div>
       </Section>
 
@@ -608,7 +608,7 @@ export default function SpaceXDashboard() {
               ))}
             </tbody>
           </table>
-          <ChartNote>Starship is the most powerful rocket ever built: 33 Raptor engines producing 16.7 million lbf of thrust at liftoff — roughly 2x the Saturn V. The rapid test cadence reflects SpaceX's hardware-rich development philosophy.</ChartNote>
+          <ChartNote>Starship is the most powerful rocket ever built: 33 Raptor engines producing 16.7 million lbf of thrust at liftoff — roughly 2x the Saturn V. The rapid test cadence reflects SpaceX&apos;s hardware-rich development philosophy.</ChartNote>
         </div>
       </Section>
 
@@ -676,7 +676,7 @@ export default function SpaceXDashboard() {
             { tag: "BULL", title: "Starlink Dominance", desc: "9.2M subs, 54% EBITDA margins, doubling annually. T-Mobile direct-to-cell expands TAM to billions of potential users.", color: C.green },
             { tag: "BULL", title: "Monopoly on Reuse", desc: "No competitor has demonstrated orbital-class reuse at scale. 33 flights on one booster. Margins widen every reflight.", color: C.green },
             { tag: "BULL", title: "Starship Unlocks Everything", desc: "Space data centers, Mars missions, point-to-point transport, mega-constellation deployment. $67/kg to LEO changes the economics of space.", color: C.green },
-            { tag: "BEAR", title: "Key-Person Risk", desc: "Musk simultaneously leads two $1T+ companies plus DOGE. "Most divisive stock to join the market" — AJ Bell.", color: C.red },
+            { tag: "BEAR", title: "Key-Person Risk", desc: "Musk simultaneously leads two $1T+ companies plus DOGE. &apos;Most divisive stock to join the market&apos; — AJ Bell.", color: C.red },
             { tag: "BEAR", title: "97x Revenue Multiple", desc: "Richest multiple of any mega-IPO in history. Requires sustained hypergrowth and flawless Starship execution to justify.", color: C.red },
             { tag: "BEAR", title: "Macro & Regulatory", desc: "Unfiled S-1, global roadshow logistics, tariff uncertainty, rate jitters, and international spectrum regulation challenges.", color: C.red },
           ].map((card, i) => (
