@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import {
   BarChart, Bar, Line, AreaChart, Area, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -7,7 +8,7 @@ import {
   PolarRadiusAxis, ComposedChart, ReferenceLine,
 } from "recharts";
 
-// ─── ACTUAL S-1 DATA (filed May 20, 2026) ──────────────────────────────
+// ─── ACTUAL S-1 DATA (filed May 20, 2026) ──────────────────────────────────
 
 const pnlData = [
   { period: "2023", revenue: 10387, cogs: 6110, grossProfit: 4277, rd: 2105, sga: 1665, restructuring: 237, impairment: 3775, operatingIncome: -3505, netIncome: -4628, grossMargin: 41.2 },
@@ -158,8 +159,6 @@ const strategicDeals = [
   { name: "Cursor (Anysphere)", value: 60000, note: "$60B implied equity — GPU compute + Grok model integration", color: "#10b981" },
 ];
 
-// starshipTests defined after C (needs color references)
-
 const internalVsCustomer = [
   { year: "2023", internal: 63, customer: 33, total: 98 },
   { year: "2024", internal: 89, customer: 45, total: 138 },
@@ -232,9 +231,9 @@ const C = {
   yellow: "#d97706",
   violet: "#7c3aed",
   slate:  "#475569",
-  muted:  "#94a3b8",  // axis ticks
-  dim:    "#64748b",  // axis lines
-  grid:   "rgba(15,23,42,0.05)",
+  muted:  "#94a3b8",
+  dim:    "#94a3b8",
+  grid:   "rgba(15,23,42,0.04)",
 };
 
 const starshipTests = [
@@ -251,26 +250,135 @@ const starshipTests = [
   { f: "IFT-11", d: "2026", r: "SUCCESS", c: C.sky, detail: "Final test ahead of commercial payload operations (H2 2026)" },
 ];
 
+const NAV_LINKS = [
+  { id: "overview",    label: "Overview" },
+  { id: "pnl",         label: "P&L" },
+  { id: "segments",    label: "Segments" },
+  { id: "starlink",    label: "Starlink" },
+  { id: "ai",          label: "AI" },
+  { id: "capex",       label: "CapEx" },
+  { id: "launches",    label: "Launches" },
+  { id: "valuation",   label: "Valuation" },
+  { id: "deals",       label: "Deals" },
+  { id: "risks",       label: "Risks" },
+];
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+
+function fmtTip(name: string, value: number): string {
+  if (value == null) return "—";
+  const n = name.toLowerCase();
+  if (n.includes("margin") || n.includes(" %") || n.includes("pct") || n.endsWith("%")) {
+    return `${value.toFixed(1)}%`;
+  }
+  if (n.includes("gw")) return `${value} GW`;
+  if (n.includes("multiple")) return `${value}x`;
+  if (n.includes("subscriber") || n.endsWith("(m)")) return `${value.toFixed(1)}M`;
+  if (
+    n.includes("launch") || n.includes("flight") ||
+    n.includes("mission") || n.includes("booster") ||
+    n.includes("metric ton") || n.includes("mass to orbit") ||
+    n.includes("$/kg")
+  ) {
+    return value.toLocaleString();
+  }
+  // Dollar millions → B/M
+  const abs = Math.abs(value);
+  if (abs >= 1000) return `$${(value / 1000).toFixed(1)}B`;
+  if (abs > 0 || value === 0) return `$${value.toLocaleString()}M`;
+  return String(value);
+}
+
+function fmt(n: number, suffix = "") {
+  if (Math.abs(n) >= 1000) return `$${(n / 1000).toFixed(1)}B${suffix}`;
+  return `$${n}M${suffix}`;
+}
+
+// ─── COMPONENTS ─────────────────────────────────────────────────────────────
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function Tip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px', boxShadow: '0 4px 12px rgba(15,23,42,0.1)' }}>
-      <p style={{ color: '#0f172a', fontWeight: 600, fontSize: 12, marginBottom: 4 }}>{label}</p>
+    <div style={{
+      background: "#fff",
+      border: "1px solid #e2e8f0",
+      borderRadius: 14,
+      padding: "12px 16px",
+      boxShadow: "0 8px 32px rgba(15,23,42,0.14)",
+      minWidth: 170,
+      fontFamily: "inherit",
+    }}>
+      <p style={{ color: "#0f172a", fontWeight: 700, fontSize: 12, marginBottom: 8, paddingBottom: 7, borderBottom: "1px solid #f1f5f9" }}>
+        {label}
+      </p>
       {payload.map((e: any, i: number) => (
-        <p key={i} style={{ color: e.color, fontSize: 12 }}>
-          {e.name}: <span style={{ fontWeight: 700 }}>{e.value?.toLocaleString?.() ?? e.value}</span>
-        </p>
+        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, marginTop: i > 0 ? 5 : 0 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#64748b", fontSize: 11 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: e.color, display: "inline-block", flexShrink: 0 }} />
+            {e.name}
+          </span>
+          <span style={{ color: "#0f172a", fontWeight: 700, fontSize: 12 }}>
+            {fmtTip(e.name, e.value)}
+          </span>
+        </div>
       ))}
     </div>
   );
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+function AnimNum({ target, fmt: fmtFn }: { target: number; fmt: (n: number) => string }) {
+  const [val, setVal] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        const dur = 1400;
+        const t0 = performance.now();
+        const tick = (now: number) => {
+          const p = Math.min((now - t0) / dur, 1);
+          const eased = 1 - Math.pow(1 - p, 3);
+          setVal(target * eased);
+          if (p < 1) requestAnimationFrame(tick);
+          else setVal(target);
+        };
+        requestAnimationFrame(tick);
+      }
+    }, { threshold: 0.25 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [target]);
+
+  return <span ref={ref} className="kpi-number">{fmtFn(val)}</span>;
+}
+
+function Nav({ active }: { active: string }) {
+  return (
+    <nav className="site-nav">
+      <div className="site-nav-inner">
+        <span className="nav-brand">SPCX</span>
+        <div className="nav-links">
+          {NAV_LINKS.map(s => (
+            <a key={s.id} href={`#${s.id}`} className={`nav-link${active === s.id ? " active" : ""}`}>
+              {s.label}
+            </a>
+          ))}
+        </div>
+      </div>
+    </nav>
+  );
+}
+
 function Section({ title, sub, children, id }: { title: string; sub?: string; children: React.ReactNode; id?: string }) {
   return (
     <section id={id} className="py-14 md:py-20 px-4 sm:px-6 md:px-12 max-w-[1400px] mx-auto">
-      <div className="mb-7 md:mb-9">
+      <div className="mb-8 md:mb-10">
         <h2 className="section-title">{title}</h2>
         {sub && <p className="section-sub">{sub}</p>}
         <div className="section-bar" />
@@ -281,68 +389,106 @@ function Section({ title, sub, children, id }: { title: string; sub?: string; ch
 }
 
 function ChartNote({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs text-slate-500 mt-3 leading-relaxed">{children}</p>;
+  return <p className="text-xs text-slate-400 mt-4 leading-relaxed">{children}</p>;
 }
 
-function fmt(n: number, suffix = "") {
-  if (Math.abs(n) >= 1000) return `$${(n / 1000).toFixed(1)}B${suffix}`;
-  return `$${n}M${suffix}`;
-}
+const AXIS = { stroke: C.dim, tick: { fill: "#94a3b8", fontSize: 11 } };
+const GRID = { strokeDasharray: "3 3", stroke: C.grid };
 
-// ─── MAIN ────────────────────────────────────────────────────────────
+// ─── KPI DATA ────────────────────────────────────────────────────────────────
+
+const kpis = [
+  { target: 18.7, fmt: (n: number) => `$${n.toFixed(1)}B`, label: "2025 Revenue", color: C.sky },
+  { target: 9.2,  fmt: (n: number) => `$${n.toFixed(1)}B`, label: "2025 Gross Profit", color: C.green },
+  { target: 10.3, fmt: (n: number) => `${n.toFixed(1)}M`,  label: "Starlink Subs Q1 '26", color: "#93c5fd" },
+  { target: 170,  fmt: (n: number) => `${Math.round(n)}`,  label: "2025 Orbital Launches", color: C.orange },
+  { target: 28.4, fmt: (n: number) => `$${n.toFixed(1)}B`, label: "Contracted Backlog", color: C.sky },
+  { target: 22,   fmt: (n: number) => `${Math.round(n)}K+`,label: "Employees (Mar '26)", color: C.yellow },
+];
+
+const byTheNumbers = [
+  { target: 18.7, fmt: (n: number) => `$${n.toFixed(1)}B`, unit: "", label: "2025 Revenue (S-1 actual)" },
+  { target: 49.4, fmt: (n: number) => `${n.toFixed(1)}`,   unit: "%",  label: "2025 Gross Margin" },
+  { target: 170,  fmt: (n: number) => `${Math.round(n)}`,  unit: "",   label: "2025 orbital launches (record)" },
+  { target: 2213, fmt: (n: number) => `${Math.round(n).toLocaleString()}`, unit: "t", label: "Metric tons to orbit, 2025" },
+  { target: 10.3, fmt: (n: number) => `${n.toFixed(1)}M`,  unit: "",   label: "Starlink subscribers (Q1 '26)" },
+  { target: 7.2,  fmt: (n: number) => `$${n.toFixed(1)}B`, unit: "",   label: "Connectivity Adj. EBITDA (2025)" },
+  { target: 11,   fmt: (n: number) => `${Math.round(n)}`,  unit: "",   label: "Starship flight tests to date" },
+  { target: 650,  fmt: (n: number) => `${Math.round(n)}+`, unit: "",   label: "Total orbital launches ever" },
+  { target: 1.25, fmt: (n: number) => `$${n.toFixed(2)}B`, unit: "/mo",label: "Anthropic compute contract" },
+  { target: 29.1, fmt: (n: number) => `$${n.toFixed(1)}B`, unit: "",   label: "Total debt outstanding" },
+  { target: 550,  fmt: (n: number) => `${Math.round(n)}M`, unit: "",   label: "X Monthly Active Users (Q1 '26)" },
+  { target: 102,  fmt: (n: number) => `$${Math.round(n)}B`,unit: "",   label: "Total assets (Mar 31, 2026)" },
+];
+
+// ─── MAIN ────────────────────────────────────────────────────────────────────
 
 export default function SpaceXDashboard() {
+  const [active, setActive] = useState("overview");
+
+  useEffect(() => {
+    const ids = NAV_LINKS.map(s => s.id);
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) setActive(entry.target.id);
+      });
+    }, { rootMargin: "-25% 0px -65% 0px" });
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <main className="min-h-screen bg-[#f1f5f9] text-slate-900 overflow-x-hidden">
 
+      <Nav active={active} />
+
       {/* ══════ HERO ══════ */}
       <div className="hero-section">
+        <div className="hero-stars" />
         <img src="https://i.redd.it/2r38gq2b2bg31.jpg" alt="SpaceX rocket launch" className="hero-bg" />
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl w-full">
           <div className="fade-in-up delay-1">
             <span className="tag mb-6 sm:mb-8 inline-block">SPCX · Nasdaq · S-1 Filed May 20, 2026</span>
           </div>
-          <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter mb-4 sm:mb-6 fade-in-up delay-2 text-glow">
+          <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter mb-4 sm:mb-6 fade-in-up delay-2">
             <span className="gradient-text">SPACEX</span>
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-white/70 font-light tracking-wide mb-2 fade-in-up delay-3">
-            THE ROAD TO
+          <p className="text-base sm:text-lg md:text-xl text-white/55 font-light tracking-[0.18em] uppercase mb-2 fade-in-up delay-3">
+            The road to
           </p>
-          <p className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter mb-6 sm:mb-8 fade-in-up delay-4">
-            <span className="gradient-text">$1.75 TRILLION</span>
+          <p className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter mb-7 sm:mb-9 fade-in-up delay-4">
+            <span className="gradient-text">$1.75 Trillion</span>
           </p>
-          <p className="text-sm md:text-base text-white/60 max-w-lg mx-auto fade-in-up delay-5">
+          <p className="text-sm md:text-base text-white/50 max-w-lg mx-auto leading-relaxed fade-in-up delay-5">
             The largest IPO in history. $18.7B in 2025 revenue. 10.3M Starlink subscribers. xAI, X, and a $28.5T TAM.
           </p>
         </div>
-        <div className="absolute bottom-6 sm:bottom-8 z-10 fade-in-up delay-6">
-          <div className="w-px h-10 bg-gradient-to-b from-transparent to-white/30 mx-auto mb-2" />
-          <p className="text-[9px] text-white/40 tracking-[0.3em] uppercase">Scroll</p>
+        <div className="absolute bottom-7 sm:bottom-9 z-10 fade-in-up delay-6 flex flex-col items-center gap-2">
+          <div className="w-px h-10 bg-gradient-to-b from-transparent to-white/25" />
+          <p className="text-[9px] text-white/35 tracking-[0.35em] uppercase">Scroll</p>
         </div>
       </div>
 
       {/* ══════ KPI STRIP ══════ */}
       <div className="kpi-strip">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 py-8 sm:py-10 grid grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
-          {[
-            { value: "$18.7B", label: "2025 Revenue", color: C.sky },
-            { value: "$9.2B", label: "2025 Gross Profit", color: C.green },
-            { value: "10.3M", label: "Starlink Subs (Q1 '26)", color: "#93c5fd" },
-            { value: "170", label: "2025 Launches", color: C.orange },
-            { value: "$28.4B", label: "Contracted Backlog", color: C.sky },
-            { value: "22K+", label: "Employees (Mar '26)", color: C.yellow },
-          ].map((s, i) => (
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 py-9 sm:py-11 grid grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5">
+          {kpis.map((s, i) => (
             <div key={i} className="kpi-card text-center">
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-0.5" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-white/70 text-[10px] uppercase tracking-widest">{s.label}</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 kpi-number" style={{ color: s.color }}>
+                <AnimNum target={s.target} fmt={s.fmt} />
+              </div>
+              <div className="text-white/60 text-[10px] uppercase tracking-widest leading-tight">{s.label}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* ══════ IPO OVERVIEW ══════ */}
-      <Section title="IPO Overview" sub="SpaceX filed its S-1 with the SEC in May 2026. Key facts from the actual filing.">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <Section id="overview" title="IPO Overview" sub="SpaceX filed its S-1 with the SEC in May 2026. Key facts from the actual filing.">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { label: "IPO Target Valuation", value: "$1.75T", desc: "Ticker: SPCX on Nasdaq. Targeting $75B raise at ~$1.75T valuation. Range: $1.25T–$2.5T. 5:1 stock split completed May 4, 2026.", color: C.sky },
             { label: "2025 Revenue", value: "$18.7B", desc: "Three segments: Connectivity $11.4B (61%), Space $4.1B (22%), AI — xAI + X $3.2B (17%). Revenue CAGR 2023–2025: 34%.", color: C.green },
@@ -352,7 +498,7 @@ export default function SpaceXDashboard() {
             { label: "$28.5T TAM", value: "AI: $26.5T", desc: "AI accounts for 93% of SpaceX's stated $28.5T TAM. Space is only $370B. The real bet is orbital AI and terrestrial compute.", color: C.blue },
           ].map((item, i) => (
             <div key={i} className="ipo-card">
-              <div className="text-[10px] tracking-[0.12em] uppercase mb-3" style={{ color: item.color }}>{item.label}</div>
+              <div className="text-[10px] tracking-[0.14em] uppercase mb-3 font-semibold" style={{ color: item.color }}>{item.label}</div>
               <div className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mb-2">{item.value}</div>
               <p className="text-sm text-slate-500 leading-relaxed">{item.desc}</p>
             </div>
@@ -363,63 +509,63 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ FULL P&L ══════ */}
-      <Section title="Profit & Loss" sub="Official financials from the S-1. Revenue is growing fast — but so is R&D spend as SpaceX pours capital into xAI compute infrastructure.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+      <Section id="pnl" title="Profit & Loss" sub="Official financials from the S-1. Revenue is growing fast — but so is R&D spend as SpaceX pours capital into xAI compute infrastructure.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Revenue vs. Gross Profit ($M)</h3>
-            <p className="text-xs text-slate-500 mb-4">Gross margin expanded from 41.2% → 42.9% → 49.4% as Connectivity (Starlink) became a larger share of the business. Gross profit nearly doubled 2023–2025.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Revenue vs. Gross Profit</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Gross margin expanded from 41.2% → 42.9% → 49.4% as Connectivity (Starlink) became a larger share of the business.</p>
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={pnlData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="period" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis yAxisId="left" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}B`} />
-                <YAxis yAxisId="right" orientation="right" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v: number) => `${v}%`} domain={[0, 80]} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="period" {...AXIS} />
+                <YAxis yAxisId="left" {...AXIS} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}B`} />
+                <YAxis yAxisId="right" orientation="right" {...AXIS} tickFormatter={(v: number) => `${v}%`} domain={[0, 80]} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
-                <Bar yAxisId="left" dataKey="revenue" name="Revenue ($M)" fill={C.blue} radius={[3, 3, 0, 0]} opacity={0.7} />
-                <Bar yAxisId="left" dataKey="grossProfit" name="Gross Profit ($M)" fill={C.sky} radius={[3, 3, 0, 0]} />
-                <Line yAxisId="right" type="monotone" dataKey="grossMargin" name="Gross Margin %" stroke={C.orange} strokeWidth={2.5} dot={{ fill: C.orange, r: 4 }} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
+                <Bar yAxisId="left" dataKey="revenue" name="Revenue ($M)" fill={C.blue} radius={[4, 4, 0, 0]} opacity={0.75} />
+                <Bar yAxisId="left" dataKey="grossProfit" name="Gross Profit ($M)" fill={C.sky} radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="grossMargin" name="Gross Margin %" stroke={C.orange} strokeWidth={2.5} dot={{ fill: C.orange, r: 5, strokeWidth: 2, stroke: "#fff" }} />
               </ComposedChart>
             </ResponsiveContainer>
-            <ChartNote>Revenue: 2023 $10.4B → 2024 $14.0B → 2025 $18.7B (+33% YoY). Gross profit: 2023 $4.3B → 2025 $9.2B (+115% in 2 years).</ChartNote>
+            <ChartNote>Revenue: 2023 $10.4B → 2024 $14.0B → 2025 $18.7B (+33% YoY). Gross profit nearly doubled 2023–2025.</ChartNote>
           </div>
 
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Operating Cost Breakdown ($M)</h3>
-            <p className="text-xs text-slate-500 mb-4">R&D exploded from $2.1B to $8.6B (2023–2025) as xAI scaled its GPU infrastructure. This single line item is why 2025 swung from operating profit to a $2.6B operating loss.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Operating Cost Breakdown</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">R&D exploded from $2.1B to $8.6B as xAI scaled its GPU infrastructure. This single line item swung 2025 from operating profit to a $2.6B loss.</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={pnlData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="period" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="period" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
-                <Bar dataKey="cogs" name="Cost of Revenue" stackId="a" fill={C.blue} />
-                <Bar dataKey="rd" name="R&D" stackId="a" fill={C.orange} />
-                <Bar dataKey="sga" name="SG&A" stackId="a" fill={C.sky} />
-                <Bar dataKey="restructuring" name="Restructuring" stackId="a" fill={C.yellow} />
-                <Bar dataKey="impairment" name="Impairment" stackId="a" fill={C.red} radius={[3, 3, 0, 0]} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
+                <Bar dataKey="cogs" name="Cost of Revenue ($M)" stackId="a" fill={C.blue} />
+                <Bar dataKey="rd" name="R&D ($M)" stackId="a" fill={C.orange} />
+                <Bar dataKey="sga" name="SG&A ($M)" stackId="a" fill={C.sky} />
+                <Bar dataKey="restructuring" name="Restructuring ($M)" stackId="a" fill={C.yellow} />
+                <Bar dataKey="impairment" name="Impairment ($M)" stackId="a" fill={C.red} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-            <ChartNote>2023 had $3.8B in impairment charges (X/Twitter write-down). 2025 R&D spike is entirely xAI GPU cluster buildout: Colossus.</ChartNote>
+            <ChartNote>2023 had $3.8B in impairment charges (X/Twitter write-down). 2025 R&D spike is entirely xAI GPU cluster buildout.</ChartNote>
           </div>
         </div>
 
         <div className="card p-5 sm:p-6">
-          <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Operating Income & Net Income (Loss) ($M)</h3>
-          <p className="text-xs text-slate-500 mb-4">SpaceX was profitable in 2024 ($791M net income) but swung to a $4.9B loss in 2025 as AI infrastructure spend accelerated. The core Space + Connectivity business is highly profitable — AI is a strategic bet.</p>
+          <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Operating Income & Net Income (Loss)</h3>
+          <p className="text-xs text-slate-500 mb-4 leading-relaxed">SpaceX was profitable in 2024 ($791M net income) but swung to a $4.9B loss in 2025 as AI infrastructure spend accelerated.</p>
           <ResponsiveContainer width="100%" height={260}>
             <ComposedChart data={pnlData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-              <XAxis dataKey="period" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-              <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}B`} />
+              <CartesianGrid {...GRID} />
+              <XAxis dataKey="period" {...AXIS} />
+              <YAxis {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}B`} />
               <Tooltip content={<Tip />} />
-              <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
+              <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
               <ReferenceLine y={0} stroke="#cbd5e1" strokeDasharray="4 4" />
-              <Bar dataKey="operatingIncome" name="Operating Income ($M)" fill={C.blue}>
+              <Bar dataKey="operatingIncome" name="Operating Income ($M)">
                 {pnlData.map((d, i) => <Cell key={i} fill={d.operatingIncome >= 0 ? C.green : C.red} />)}
               </Bar>
-              <Line type="monotone" dataKey="netIncome" name="Net Income ($M)" stroke={C.sky} strokeWidth={2.5} dot={{ fill: C.sky, r: 4 }} />
+              <Line type="monotone" dataKey="netIncome" name="Net Income ($M)" stroke={C.sky} strokeWidth={2.5} dot={{ fill: C.sky, r: 5, strokeWidth: 2, stroke: "#fff" }} />
             </ComposedChart>
           </ResponsiveContainer>
           <ChartNote>Source: SpaceX S-1, audited consolidated financial statements. All figures in millions.</ChartNote>
@@ -429,66 +575,68 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ THREE SEGMENTS ══════ */}
-      <Section title="Three Business Segments" sub="The S-1 reveals SpaceX as a three-segment company: Space (rockets), Connectivity (Starlink), and AI (xAI + X). Connectivity is the dominant and most profitable segment.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+      <Section id="segments" title="Three Business Segments" sub="The S-1 reveals SpaceX as a three-segment company: Space (rockets), Connectivity (Starlink), and AI (xAI + X). Connectivity is the dominant and most profitable segment.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Revenue by Segment ($M)</h3>
-            <p className="text-xs text-slate-500 mb-4">Connectivity (Starlink) went from $3.9B to $11.4B in two years — a 194% increase. Space grew steadily. AI (X + Grok) is a distant third.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Revenue by Segment</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Connectivity (Starlink) went from $3.9B to $11.4B in two years — a 194% increase. Now 69% of total revenue.</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={segmentRevenue}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
-                <Bar dataKey="connectivity" name="Connectivity (Starlink)" stackId="a" fill={C.sky} />
-                <Bar dataKey="space" name="Space (Launches)" stackId="a" fill={C.blue} />
-                <Bar dataKey="ai" name="AI (xAI + X)" stackId="a" fill={C.orange} radius={[3, 3, 0, 0]} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
+                <Bar dataKey="connectivity" name="Connectivity ($M)" stackId="a" fill={C.sky} />
+                <Bar dataKey="space" name="Space ($M)" stackId="a" fill={C.blue} />
+                <Bar dataKey="ai" name="AI (xAI + X) ($M)" stackId="a" fill={C.orange} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
             <ChartNote>Q1 2026: Connectivity $3.26B, AI $818M, Space $619M. Connectivity now 69% of total revenue.</ChartNote>
           </div>
 
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Segment Adjusted EBITDA ($M)</h3>
-            <p className="text-xs text-slate-500 mb-4">Connectivity is the cash machine: $7.2B Adj. EBITDA in 2025 (63% margin). AI turned negative in 2025 as Colossus GPU buildout ramped. Space EBITDA compressed on higher Starship R&D.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Segment Adjusted EBITDA</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Connectivity is the cash machine: $7.2B Adj. EBITDA in 2025 (63% margin). AI turned negative as Colossus GPU buildout ramped.</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={segmentEBITDA}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}B`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}B`} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
                 <ReferenceLine y={0} stroke="#cbd5e1" strokeDasharray="4 4" />
-                <Bar dataKey="connectivity" name="Connectivity" fill={C.sky} radius={[3, 3, 0, 0]} />
-                <Bar dataKey="space" name="Space" fill={C.blue} />
-                <Bar dataKey="ai" name="AI" fill={C.orange}>
+                <Bar dataKey="connectivity" name="Connectivity ($M)" fill={C.sky} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="space" name="Space ($M)" fill={C.blue} />
+                <Bar dataKey="ai" name="AI ($M)">
                   {segmentEBITDA.map((d, i) => <Cell key={i} fill={d.ai >= 0 ? C.orange : C.red} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <ChartNote>Segment Adjusted EBITDA is non-GAAP. Connectivity alone ($7.2B) would make it one of the most profitable companies in the S&P 500.</ChartNote>
+            <ChartNote>Connectivity alone ($7.2B) would make it one of the most profitable companies in the S&P 500.</ChartNote>
           </div>
         </div>
 
         <div className="card p-5 sm:p-6">
-          <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">2025 Revenue Mix — Detailed Breakdown</h3>
-          <p className="text-xs text-slate-500 mb-4">Consumer broadband (Starlink residential) is the largest single product at 38.6% of total revenue. Launch Services is only 13.8% — the rocket business funds everything else but isn&apos;t the growth story.</p>
+          <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">2025 Revenue Mix — Detailed Breakdown</h3>
+          <p className="text-xs text-slate-500 mb-5 leading-relaxed">Consumer broadband (Starlink residential) is the largest single product at 38.6% of total revenue. Launch Services is only 13.8% — the rocket business isn&apos;t the growth story.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {revenueDetail2025.map((item, i) => {
               const segColor = item.segment === "connectivity" ? C.sky : item.segment === "space" ? C.blue : C.orange;
               return (
-                <div key={i} className="p-4 rounded-lg bg-slate-50 border border-slate-200">
+                <div key={i} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 transition-shadow hover:shadow-md">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-sm font-medium text-slate-900">{item.name}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full capitalize" style={{ color: segColor, background: `${segColor}18` }}>
+                    <span className="text-sm font-semibold text-slate-900">{item.name}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full capitalize font-medium" style={{ color: segColor, background: `${segColor}18` }}>
                       {item.segment}
                     </span>
                   </div>
-                  <div className="text-2xl font-bold mb-1" style={{ color: segColor }}>{fmt(item.value)}</div>
+                  <div className="text-2xl font-bold mb-2" style={{ color: segColor }}>{fmt(item.value)}</div>
                   <div className="flex items-center gap-2">
-                    <div className="prog-bar flex-1"><div className="h-full rounded-full" style={{ width: `${item.pct * 2.5}%`, background: segColor }} /></div>
-                    <span className="text-xs text-slate-500">{item.pct}%</span>
+                    <div className="prog-bar flex-1">
+                      <div style={{ width: `${item.pct * 2.5}%`, background: segColor }} />
+                    </div>
+                    <span className="text-xs text-slate-500 font-medium">{item.pct}%</span>
                   </div>
                 </div>
               );
@@ -501,59 +649,61 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ STARLINK ══════ */}
-      <Section title="Starlink" sub="The world's largest satellite internet network: 9,600 satellites, 10.3M subscribers, 164 countries. Starlink generated $11.4B revenue in 2025 — growing 50% YoY.">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      <Section id="starlink" title="Starlink" sub="The world's largest satellite internet network: 9,600 satellites, 10.3M subscribers, 164 countries. Starlink generated $11.4B revenue in 2025 — growing 50% YoY.">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-7">
           {[
-            { val: "10.3M", label: "Subscribers (Q1 '26)", sub: "vs 2.3M in 2023", color: C.green },
-            { val: "$11.4B", label: "2025 Revenue", sub: "50% YoY growth", color: C.sky },
-            { val: "$7.2B", label: "2025 Adj. EBITDA", sub: "63% EBITDA margin", color: C.orange },
-            { val: "164", label: "Countries & Territories", sub: "Including Direct-to-Cell", color: C.blue },
+            { val: 10.3, fmtFn: (n: number) => `${n.toFixed(1)}M`, label: "Subscribers (Q1 '26)", sub: "vs 2.3M in 2023", color: C.green },
+            { val: 11.4, fmtFn: (n: number) => `$${n.toFixed(1)}B`, label: "2025 Revenue", sub: "50% YoY growth", color: C.sky },
+            { val: 7.2, fmtFn: (n: number) => `$${n.toFixed(1)}B`, label: "2025 Adj. EBITDA", sub: "63% EBITDA margin", color: C.orange },
+            { val: 164, fmtFn: (n: number) => `${Math.round(n)}`, label: "Countries & Territories", sub: "Including Direct-to-Cell", color: C.blue },
           ].map((s, i) => (
             <div key={i} className="stat-card p-4 sm:p-5 text-center">
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1" style={{ color: s.color }}>{s.val}</div>
-              <div className="text-[9px] sm:text-[10px] tracking-[0.12em] text-slate-500 uppercase mb-0.5">{s.label}</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1" style={{ color: s.color }}>
+                <AnimNum target={s.val} fmt={s.fmtFn} />
+              </div>
+              <div className="text-[9px] sm:text-[10px] tracking-[0.12em] text-slate-400 uppercase mb-1">{s.label}</div>
               <div className="text-xs text-slate-400">{s.sub}</div>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Subscriber Growth</h3>
-            <p className="text-xs text-slate-500 mb-4">Active Service Lines grew from 2.3M (2023) to 10.3M (Q1 2026) — 4.5x in 2+ years. Each data point is year-end except Q1 2026.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Subscriber Growth</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Active Service Lines grew from 2.3M (2023) to 10.3M (Q1 2026) — 4.5x in 2+ years.</p>
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={starlinkMetrics}>
                 <defs>
                   <linearGradient id="gSubs" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={C.sky} stopOpacity={0.25} />
+                    <stop offset="5%" stopColor={C.sky} stopOpacity={0.2} />
                     <stop offset="95%" stopColor={C.sky} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `${v}M`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v) => `${v}M`} />
                 <Tooltip content={<Tip />} />
-                <Area type="monotone" dataKey="subscribers" name="Subscribers (M)" stroke={C.sky} fill="url(#gSubs)" strokeWidth={2.5} dot={{ fill: C.sky, r: 4 }} />
+                <Area type="monotone" dataKey="subscribers" name="Subscribers (M)" stroke={C.sky} fill="url(#gSubs)" strokeWidth={2.5} dot={{ fill: C.sky, r: 5, strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 7, strokeWidth: 2, stroke: "#fff" }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">ARPU Declining — By Design</h3>
-            <p className="text-xs text-slate-500 mb-4">Monthly average revenue per user fell from $99 (2023) to $66 (Q1 2026). This is intentional: SpaceX is penetrating lower-income markets and adding mobile/wholesale plans. Volume growth more than offsets the ARPU decline.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">ARPU Declining — By Design</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Monthly ARPU fell from $99 (2023) to $66 (Q1 2026). Volume growth more than offsets price compression.</p>
             <ResponsiveContainer width="100%" height={280}>
               <ComposedChart data={starlinkMetrics}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis yAxisId="left" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
-                <YAxis yAxisId="right" orientation="right" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis yAxisId="left" {...AXIS} tickFormatter={(v) => `$${v}`} />
+                <YAxis yAxisId="right" orientation="right" {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
-                <Bar yAxisId="right" dataKey="revenue" name="Connectivity Revenue ($M)" fill={C.blue} opacity={0.5} radius={[3, 3, 0, 0]} />
-                <Line yAxisId="left" type="monotone" dataKey="arpu" name="ARPU ($/month)" stroke={C.orange} strokeWidth={2.5} dot={{ fill: C.orange, r: 4 }} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
+                <Bar yAxisId="right" dataKey="revenue" name="Connectivity Revenue ($M)" fill={C.blue} opacity={0.5} radius={[4, 4, 0, 0]} />
+                <Line yAxisId="left" type="monotone" dataKey="arpu" name="ARPU ($/month)" stroke={C.orange} strokeWidth={2.5} dot={{ fill: C.orange, r: 5, strokeWidth: 2, stroke: "#fff" }} />
               </ComposedChart>
             </ResponsiveContainer>
-            <ChartNote>Revenue growing strongly even as ARPU declines — subscriber growth is outpacing price compression. 2023 revenue in consumer broadband was $2.8B, 2025 was $7.2B (+156%).</ChartNote>
+            <ChartNote>Revenue growing strongly even as ARPU declines — subscriber growth is outpacing price compression. Consumer broadband: $2.8B (2023) → $7.2B (2025) +156%.</ChartNote>
           </div>
         </div>
       </Section>
@@ -561,56 +711,58 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ AI SEGMENT ══════ */}
-      <Section title="AI Segment: xAI + X" sub="The S-1 reveals SpaceX as the parent of xAI (Grok) and X (formerly Twitter). The AI segment is a massive bet — $6.4B operating loss in 2025, funded by Starlink's cash flows.">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <Section id="ai" title="AI Segment: xAI + X" sub="The S-1 reveals SpaceX as the parent of xAI (Grok) and X (formerly Twitter). The AI segment is a massive bet — $6.4B operating loss in 2025, funded by Starlink's cash flows.">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-7">
           {[
-            { val: "$3.2B", label: "2025 AI Revenue", sub: "Advertising + Grok subscriptions", color: C.orange },
-            { val: "$(6.4B)", label: "2025 Operating Loss", sub: "Colossus GPU buildout", color: C.red },
-            { val: "1.0 GW", label: "Compute (Q1 '26)", sub: "Nameplate compute draw", color: C.yellow },
-            { val: "$12.7B", label: "2025 AI CapEx", sub: "61% of total company CapEx", color: C.orange },
+            { val: 3.2,   fmtFn: (n: number) => `$${n.toFixed(1)}B`, label: "2025 AI Revenue",    sub: "Advertising + Grok subscriptions", color: C.orange },
+            { val: -6.4,  fmtFn: (n: number) => `$(${Math.abs(n).toFixed(1)}B)`, label: "2025 Operating Loss", sub: "Colossus GPU buildout", color: C.red },
+            { val: 1.0,   fmtFn: (n: number) => `${n.toFixed(1)} GW`, label: "Compute (Q1 '26)",  sub: "Nameplate compute draw", color: C.yellow },
+            { val: 12.7,  fmtFn: (n: number) => `$${n.toFixed(1)}B`, label: "2025 AI CapEx",      sub: "61% of total company CapEx", color: C.orange },
           ].map((s, i) => (
             <div key={i} className="stat-card p-4 sm:p-5 text-center">
-              <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: s.color }}>{s.val}</div>
-              <div className="text-[9px] tracking-[0.12em] text-slate-500 uppercase mb-0.5">{s.label}</div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-bold mb-1" style={{ color: s.color }}>
+                <AnimNum target={Math.abs(s.val)} fmt={(n) => s.val < 0 ? `$(${n.toFixed(1)}B)` : s.fmtFn(n)} />
+              </div>
+              <div className="text-[9px] tracking-[0.12em] text-slate-400 uppercase mb-0.5">{s.label}</div>
               <div className="text-xs text-slate-400">{s.sub}</div>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">AI Segment Revenue Breakdown ($M)</h3>
-            <p className="text-xs text-slate-500 mb-4">AI segment revenue comes from two sources: X advertising ($1.8B in 2025) and AI Solutions & Infrastructure — Grok subscriptions, xAI API, and compute services ($1.4B). Ad revenue stabilized after 2023 Twitter chaos.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">AI Segment Revenue Breakdown</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">X advertising ($1.8B in 2025) and AI Solutions & Infrastructure — Grok subscriptions, xAI API, and compute services ($1.4B).</p>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={aiSegmentData.filter(d => d.year !== "Q1 '26")}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${v}M`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v) => `$${v}M`} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
-                <Bar dataKey="adsRevenue" name="X Advertising ($M)" stackId="a" fill="#cbd5e1" />
-                <Bar dataKey="aiSolutions" name="AI Solutions & Infra ($M)" stackId="a" fill={C.orange} radius={[3, 3, 0, 0]} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
+                <Bar dataKey="adsRevenue" name="X Advertising ($M)" stackId="a" fill="#94a3b8" />
+                <Bar dataKey="aiSolutions" name="AI Solutions & Infra ($M)" stackId="a" fill={C.orange} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">AI Segment Operating Loss vs. Compute Scale ($M / GW)</h3>
-            <p className="text-xs text-slate-500 mb-4">Compute capacity (nameplate draw in gigawatts) grew 0→0.3→0.8→1.0 GW across 2023–Q1 2026. Operating losses scaled with compute investment. The Colossus cluster in Memphis is the primary driver.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Operating Loss vs. Compute Scale</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Compute capacity grew 0→0.3→0.8→1.0 GW across 2023–Q1 2026. Losses scaled with compute. Colossus in Memphis is the primary driver.</p>
             <ResponsiveContainer width="100%" height={280}>
               <ComposedChart data={aiSegmentData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis yAxisId="left" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}B`} />
-                <YAxis yAxisId="right" orientation="right" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `${v} GW`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis yAxisId="left" {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}B`} />
+                <YAxis yAxisId="right" orientation="right" {...AXIS} tickFormatter={(v) => `${v} GW`} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
                 <ReferenceLine yAxisId="left" y={0} stroke="#cbd5e1" strokeDasharray="4 4" />
-                <Bar yAxisId="left" dataKey="opLoss" name="Operating Loss ($M)" fill={C.red} opacity={0.7} radius={[3, 3, 0, 0]} />
-                <Line yAxisId="right" type="monotone" dataKey="computeGW" name="Compute (GW)" stroke={C.yellow} strokeWidth={2.5} dot={{ fill: C.yellow, r: 4 }} />
+                <Bar yAxisId="left" dataKey="opLoss" name="Operating Loss ($M)" fill={C.red} opacity={0.75} radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="computeGW" name="Compute (GW)" stroke={C.yellow} strokeWidth={2.5} dot={{ fill: C.yellow, r: 5, strokeWidth: 2, stroke: "#fff" }} />
               </ComposedChart>
             </ResponsiveContainer>
-            <ChartNote>AI Adj. EBITDA was positive in 2023 ($1.2B) and 2024 ($347M) driven by Twitter cash flows, but turned negative in 2025 as GPU capex outpaced cash generation.</ChartNote>
+            <ChartNote>AI Adj. EBITDA was positive in 2023–24 (Twitter cash flows) but turned negative in 2025 as GPU capex outpaced cash generation.</ChartNote>
           </div>
         </div>
       </Section>
@@ -618,55 +770,55 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ CAPEX EXPLOSION ══════ */}
-      <Section title="CapEx & Investment" sub="SpaceX spent $20.7B in capital expenditures in 2025 — nearly 111% of revenue. The AI segment alone consumed $12.7B. This is the highest absolute CapEx spend of any private company ever.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+      <Section id="capex" title="CapEx & Investment" sub="SpaceX spent $20.7B in capital expenditures in 2025 — nearly 111% of revenue. The AI segment alone consumed $12.7B. The highest absolute CapEx spend of any private company ever.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">CapEx by Segment ($M)</h3>
-            <p className="text-xs text-slate-500 mb-4">AI CapEx went from $463M (2023) to $12.7B (2025) — a 27x increase in 2 years. In Q1 2026 alone, AI CapEx was $7.7B, suggesting a $30B+ full-year 2026 pace.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">CapEx by Segment</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">AI CapEx went from $463M (2023) to $12.7B (2025) — a 27x increase in 2 years. Q1 2026 AI CapEx: $7.7B, implying $30B+ annualized pace.</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={capexData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
-                <Bar dataKey="ai" name="AI (xAI Compute)" stackId="a" fill={C.orange} />
-                <Bar dataKey="connectivity" name="Connectivity (Satellites)" stackId="a" fill={C.sky} />
-                <Bar dataKey="space" name="Space (Launch Infra)" stackId="a" fill={C.blue} radius={[3, 3, 0, 0]} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
+                <Bar dataKey="ai" name="AI (xAI Compute) ($M)" stackId="a" fill={C.orange} />
+                <Bar dataKey="connectivity" name="Connectivity (Satellites) ($M)" stackId="a" fill={C.sky} />
+                <Bar dataKey="space" name="Space (Launch Infra) ($M)" stackId="a" fill={C.blue} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
             <ChartNote>Total 2025 CapEx: $20.7B. AI: $12.7B (61%), Connectivity: $4.2B (20%), Space: $3.8B (19%).</ChartNote>
           </div>
 
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">R&D Explosion ($M)</h3>
-            <p className="text-xs text-slate-500 mb-4">R&D as a % of revenue went from 20% to 46% in two years — unprecedented for a company at this scale. This is the primary reason for the 2025 operating loss despite strong gross profits.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">R&D Explosion</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">R&D as a % of revenue went from 20% to 46% in two years — unprecedented for a company at this scale.</p>
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={rdExpansion}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis yAxisId="left" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
-                <YAxis yAxisId="right" orientation="right" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis yAxisId="left" {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
+                <YAxis yAxisId="right" orientation="right" {...AXIS} tickFormatter={(v) => `${v}%`} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
-                <Bar yAxisId="left" dataKey="rd" name="R&D Spend ($M)" fill={C.orange} radius={[3, 3, 0, 0]} />
-                <Line yAxisId="right" type="monotone" dataKey="rdPct" name="R&D % of Revenue" stroke={C.red} strokeWidth={2.5} dot={{ fill: C.red, r: 4 }} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
+                <Bar yAxisId="left" dataKey="rd" name="R&D Spend ($M)" fill={C.orange} radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="rdPct" name="R&D % of Revenue" stroke={C.red} strokeWidth={2.5} dot={{ fill: C.red, r: 5, strokeWidth: 2, stroke: "#fff" }} />
               </ComposedChart>
             </ResponsiveContainer>
-            <ChartNote>R&D grew $2.1B → $3.5B → $8.6B. For comparison, Microsoft spends ~15% of revenue on R&D. SpaceX is at 46% — investing heavily in future platforms.</ChartNote>
+            <ChartNote>R&D grew $2.1B → $3.5B → $8.6B. Microsoft spends ~15% of revenue on R&D. SpaceX is at 46%.</ChartNote>
           </div>
         </div>
 
         <div className="card p-5 sm:p-6">
-          <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">PP&E Breakdown as of Dec 31, 2025 — What SpaceX Owns ($M)</h3>
-          <p className="text-xs text-slate-500 mb-4">Servers & networking ($22.7B) now exceeds satellites ($11.9B) as the largest asset class. The xAI GPU buildout has transformed SpaceX from a rocket company into one of the world&apos;s largest AI infrastructure operators.</p>
+          <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">PP&E Breakdown as of Dec 31, 2025 — What SpaceX Owns</h3>
+          <p className="text-xs text-slate-500 mb-5 leading-relaxed">Servers & networking ($22.7B) now exceeds satellites ($11.9B) as the largest asset class. The xAI GPU buildout has transformed SpaceX into one of the world&apos;s largest AI infrastructure operators.</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {ppeBreakdown.map((item, i) => (
-              <div key={i} className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <div key={i} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:shadow-md transition-shadow">
                 <div className="text-xs text-slate-500 mb-1">{item.name}</div>
                 <div className="text-lg font-bold mb-2" style={{ color: item.color }}>{fmt(item.value)}</div>
                 <div className="prog-bar w-full">
-                  <div className="h-full rounded-full" style={{ width: `${(item.value / 22694) * 100}%`, background: item.color }} />
+                  <div style={{ width: `${(item.value / 22694) * 100}%`, background: item.color }} />
                 </div>
               </div>
             ))}
@@ -678,44 +830,44 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ CASH FLOWS ══════ */}
-      <Section title="Cash Flows & Balance Sheet" sub="SpaceX is generating strong operating cash flows, but investing aggressively — requiring significant external financing. The balance sheet is growing rapidly.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <Section id="cashflows" title="Cash Flows & Balance Sheet" sub="SpaceX is generating strong operating cash flows, but investing aggressively — requiring significant external financing. The balance sheet is growing rapidly.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Cash Flow Statement ($M)</h3>
-            <p className="text-xs text-slate-500 mb-4">Operating cash flow is strong and growing ($6.8B in 2025). But investing outflows ($19.6B in 2025) require massive financing. In Q1 2026, SpaceX invested $16.7B in a single quarter — an annualized $67B pace.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Cash Flow Statement</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Operating cash flow: $6.8B in 2025. Investing outflows: $19.6B. Q1 2026: $16.7B invested in a single quarter — $67B annualized pace.</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={cashFlowData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
                 <ReferenceLine y={0} stroke="#cbd5e1" strokeDasharray="4 4" />
-                <Bar dataKey="operating" name="Operating Cash Flow" fill={C.green} radius={[3, 3, 0, 0]} />
-                <Bar dataKey="investing" name="Investing (Outflows)" fill={C.red} />
-                <Bar dataKey="financing" name="Financing Inflows" fill={C.blue} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="operating" name="Operating Cash Flow ($M)" fill={C.green} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="investing" name="Investing (Outflows) ($M)" fill={C.red} />
+                <Bar dataKey="financing" name="Financing Inflows ($M)" fill={C.blue} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-            <ChartNote>2025 financing inflows of $26.4B funded the massive AI CapEx program. IPO proceeds will replenish the balance sheet and fund continued expansion.</ChartNote>
+            <ChartNote>2025 financing inflows of $26.4B funded the massive AI CapEx program. IPO proceeds will replenish the balance sheet.</ChartNote>
           </div>
 
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Balance Sheet Snapshot ($B)</h3>
-            <p className="text-xs text-slate-500 mb-4">Total assets nearly doubled from $57B (Dec 2024) to $102B (Mar 2026) in just 15 months. Cash peaked at $24.7B end of 2025 then drew down to $15.9B by Q1 2026 as AI investment accelerated.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Balance Sheet Snapshot</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Total assets nearly doubled from $57B (Dec 2024) to $102B (Mar 2026) in just 15 months. Cash peaked at $24.7B end of 2025.</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={balanceSheet}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="period" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="period" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
                 <Bar dataKey="cash" name="Cash & Equivalents ($M)" fill={C.green} />
                 <Bar dataKey="ppe" name="PP&E, net ($M)" fill={C.sky} />
-                <Bar dataKey="totalLiabilities" name="Total Liabilities ($M)" fill={C.red} opacity={0.6} />
-                <Bar dataKey="equity" name="Shareholders' Equity ($M)" fill={C.orange} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="totalLiabilities" name="Total Liabilities ($M)" fill={C.red} opacity={0.65} />
+                <Bar dataKey="equity" name="Shareholders' Equity ($M)" fill={C.orange} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-            <ChartNote>Post-IPO preferred stock conversion (6.7B shares) will dramatically increase shareholders&apos; equity on a pro forma basis. Total assets: $102B as of March 31, 2026.</ChartNote>
+            <ChartNote>Post-IPO preferred stock conversion (6.7B shares) will dramatically increase shareholders&apos; equity. Total assets: $102B as of March 31, 2026.</ChartNote>
           </div>
         </div>
       </Section>
@@ -723,44 +875,44 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ LAUNCHES & MASS TO ORBIT ══════ */}
-      <Section title="Launch Operations" sub="SpaceX conducted 170 orbital launches in 2025 — a new world record. More critically, they delivered 2,213 metric tons to orbit, representing 80%+ of all mass humanity sent to space that year.">
-        <div className="card p-5 sm:p-6 md:p-8">
+      <Section id="launches" title="Launch Operations" sub="SpaceX conducted 170 orbital launches in 2025 — a new world record. More critically, they delivered 2,213 metric tons to orbit, representing 80%+ of all mass humanity sent to space that year.">
+        <div className="card p-5 sm:p-7">
           <ResponsiveContainer width="100%" height={340}>
             <ComposedChart data={launchMassData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-              <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-              <YAxis yAxisId="left" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `${v}`} />
-              <YAxis yAxisId="right" orientation="right" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `${v}t`} />
+              <CartesianGrid {...GRID} />
+              <XAxis dataKey="year" {...AXIS} />
+              <YAxis yAxisId="left" {...AXIS} />
+              <YAxis yAxisId="right" orientation="right" {...AXIS} tickFormatter={(v) => `${v}t`} />
               <Tooltip content={<Tip />} />
-              <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
-              <Bar yAxisId="left" dataKey="launches" name="Orbital Launches" fill={C.blue} radius={[3, 3, 0, 0]} opacity={0.8} />
-              <Line yAxisId="right" type="monotone" dataKey="massToOrbit" name="Mass to Orbit (metric tons)" stroke={C.sky} strokeWidth={2.5} dot={{ fill: C.sky, r: 4, strokeWidth: 2, stroke: "#fff" }} />
+              <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
+              <Bar yAxisId="left" dataKey="launches" name="Orbital Launches" fill={C.blue} radius={[4, 4, 0, 0]} opacity={0.85} />
+              <Line yAxisId="right" type="monotone" dataKey="massToOrbit" name="Mass to Orbit (metric tons)" stroke={C.sky} strokeWidth={2.5} dot={{ fill: C.sky, r: 5, strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 7 }} />
             </ComposedChart>
           </ResponsiveContainer>
-          <ChartNote>S-1 data: 2023: 98 launches / 1,210t | 2024: 138 / 1,699t | 2025: 170 / 2,213t | Q1 2026: 40 / 556t. SpaceX has an over 99% mission success rate across 650+ orbital launches. As of March 31, 2026: ~7,400 metric tons total delivered to orbit.</ChartNote>
+          <ChartNote>2023: 98 launches / 1,210t | 2024: 138 / 1,699t | 2025: 170 / 2,213t | Q1 2026: 40 / 556t. SpaceX has a 99%+ mission success rate across 650+ orbital launches.</ChartNote>
         </div>
       </Section>
 
       <div className="accent-rule" />
 
       {/* ══════ VEHICLE FLEET ══════ */}
-      <Section title="Vehicle Fleet" sub="Four vehicles powering humanity's expansion into space. Falcon 9 has now demonstrated 34 reuses on a single booster. Starship is the future.">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <Section id="fleet" title="Vehicle Fleet" sub="Four vehicles powering humanity's expansion into space. Falcon 9 has now demonstrated 34 reuses on a single booster. Starship is the future.">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {vehicleFleet.map((v, i) => (
-            <div key={i} className="card p-5 sm:p-6 group" style={{ borderColor: `${v.color}20` }}>
+            <div key={i} className="card p-5 sm:p-6 group" style={{ borderColor: `${v.color}25` }}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-slate-900">{v.name}</h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: v.color, background: `${v.color}18` }}>{v.type}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ color: v.color, background: `${v.color}18` }}>{v.type}</span>
               </div>
               <div className="space-y-2.5 text-sm">
                 {([["Height", v.height], ["Payload", v.payload], ["Engines", v.engines], ["Reuse", v.reuses], ["Missions", v.launches]] as [string, string][]).map(([label, val], j) => (
                   <div key={j} className="flex justify-between border-b border-slate-100 pb-2">
                     <span className="text-slate-400">{label}</span>
-                    <span className="text-slate-700 font-medium">{val}</span>
+                    <span className="text-slate-700 font-semibold">{val}</span>
                   </div>
                 ))}
               </div>
-              <div className="h-[2px] mt-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `linear-gradient(to right, ${v.color}, transparent)` }} />
+              <div className="h-0.5 mt-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `linear-gradient(to right, ${v.color}, transparent)` }} />
             </div>
           ))}
         </div>
@@ -769,40 +921,40 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ BOOSTER REUSE ══════ */}
-      <Section title="Reuse Leaderboard" sub="B1067 now holds the record at 34 flights — a single rocket booster reflown like an aircraft. As of March 31, 2026, over 540 of 650+ total launches used a flight-proven booster.">
-        <div className="card p-5 sm:p-6 md:p-8">
+      <Section id="reuse" title="Reuse Leaderboard" sub="B1067 holds the record at 34 flights — a single booster reflown like a commercial aircraft. Over 540 of 650+ total launches used a flight-proven booster.">
+        <div className="card p-5 sm:p-7">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={boosterReuse} layout="vertical" margin={{ left: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-              <XAxis type="number" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-              <YAxis type="category" dataKey="booster" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 12 }} width={50} />
+              <CartesianGrid {...GRID} />
+              <XAxis type="number" {...AXIS} />
+              <YAxis type="category" dataKey="booster" {...AXIS} width={52} />
               <Tooltip content={<Tip />} />
-              <Bar dataKey="flights" name="Flights" radius={[0, 4, 4, 0]}>
+              <Bar dataKey="flights" name="Flights" radius={[0, 6, 6, 0]}>
                 {boosterReuse.map((_, i) => (
-                  <Cell key={i} fill={i === 0 ? C.sky : i === 1 ? C.blue : `rgba(37,99,235,${0.6 - i * 0.08})`} />
+                  <Cell key={i} fill={i === 0 ? C.sky : i === 1 ? C.blue : `rgba(37,99,235,${0.65 - i * 0.07})`} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <ChartNote>Every reflight amortizes the ~$60M booster cost. The S-1 notes Falcon 9&apos;s LEO cost dropped 85% from the historical average of $18,500/kg (in 2010) to approximately $2,700/kg. Starship targets $67/kg.</ChartNote>
+          <ChartNote>Every reflight amortizes the ~$60M booster cost. Falcon 9&apos;s LEO cost dropped 85% from $18,500/kg (2010) to ~$2,700/kg. Starship targets $67/kg.</ChartNote>
         </div>
       </Section>
 
       <div className="accent-rule" />
 
       {/* ══════ COST ══════ */}
-      <Section title="Cost Revolution" sub="Starship at $67/kg to LEO would be a 100x+ reduction from the Space Shuttle era. SpaceX's cost advantage is structural — rooted in vertical integration, software-first design, and reusability.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <Section id="cost" title="Cost Revolution" sub="Starship at $67/kg to LEO would be a 100x+ reduction from the Space Shuttle era. SpaceX's cost advantage is structural — rooted in vertical integration, software-first design, and reusability.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-2">Cost Per Launch ($M)</h3>
-            <p className="text-xs text-slate-500 mb-4">Internal cost for SpaceX (reusable). List price for competitors. Starship target is $10M fully reusable.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-2">Cost Per Launch ($M)</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Internal cost for SpaceX (reusable). List price for competitors. Starship target is $10M fully reusable.</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={costComparison}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="vehicle" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 10 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${v}M`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="vehicle" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v) => `$${v}M`} />
                 <Tooltip content={<Tip />} />
-                <Bar dataKey="cost" name="Cost ($M)" radius={[3, 3, 0, 0]}>
+                <Bar dataKey="cost" name="Cost ($M)" radius={[4, 4, 0, 0]}>
                   {costComparison.map((e, i) => (
                     <Cell key={i} fill={e.vehicle.includes("Starship") ? C.green : e.vehicle.includes("Falcon") || e.vehicle.includes("F.") ? C.blue : C.orange} />
                   ))}
@@ -811,15 +963,15 @@ export default function SpaceXDashboard() {
             </ResponsiveContainer>
           </div>
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-2">Cost Per kg to LEO ($)</h3>
-            <p className="text-xs text-slate-500 mb-4">The metric that matters for satellite economics and AI compute in orbit. Starship at $67/kg unlocks orbital data centers.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-2">Cost Per kg to LEO ($)</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">The metric that matters for satellite economics and orbital AI compute. Starship at $67/kg unlocks orbital data centers.</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={costComparison}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="vehicle" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 10 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="vehicle" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v) => `$${v}`} />
                 <Tooltip content={<Tip />} />
-                <Bar dataKey="costPerKg" name="$/kg to LEO" radius={[3, 3, 0, 0]}>
+                <Bar dataKey="costPerKg" name="$/kg to LEO" radius={[4, 4, 0, 0]}>
                   {costComparison.map((e, i) => (
                     <Cell key={i} fill={e.vehicle.includes("Starship") ? C.green : e.vehicle.includes("Falcon") || e.vehicle.includes("F.") ? C.sky : C.red} />
                   ))}
@@ -833,20 +985,20 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ COMPETITIVE ══════ */}
-      <Section title="Competitive Landscape" sub="SpaceX conducted 170 launches in 2025. The next closest competitor launched 20. SpaceX isn't just winning — it's operating in a different dimension.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+      <Section id="competitive" title="Competitive Landscape" sub="SpaceX conducted 170 launches in 2025. The next closest competitor launched 20. SpaceX isn't just winning — it's operating in a different dimension.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-2">Capability Index (SpaceX = 100)</h3>
-            <p className="text-xs text-slate-500 mb-4">Six dimensions indexed to SpaceX. No competitor is even close on any dimension.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-2">Capability Index (SpaceX = 100)</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Six dimensions indexed to SpaceX. No competitor is close on any single dimension.</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarData} outerRadius={90}>
-                <PolarGrid stroke="rgba(15,23,42,0.08)" />
-                <PolarAngleAxis dataKey="subject" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 9 }} />
+                <PolarGrid stroke="rgba(15,23,42,0.07)" />
+                <PolarAngleAxis dataKey="subject" stroke={C.dim} tick={{ fill: "#94a3b8", fontSize: 10 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
-                <Radar name="SpaceX" dataKey="SpaceX" stroke={C.blue} fill={C.blue} fillOpacity={0.15} />
-                <Radar name="Blue Origin" dataKey="BlueOrigin" stroke={C.orange} fill={C.orange} fillOpacity={0.06} />
-                <Radar name="Rocket Lab" dataKey="RocketLab" stroke={C.green} fill={C.green} fillOpacity={0.06} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 11 }} />
+                <Radar name="SpaceX" dataKey="SpaceX" stroke={C.blue} fill={C.blue} fillOpacity={0.18} strokeWidth={2} />
+                <Radar name="Blue Origin" dataKey="BlueOrigin" stroke={C.orange} fill={C.orange} fillOpacity={0.08} strokeWidth={1.5} />
+                <Radar name="Rocket Lab" dataKey="RocketLab" stroke={C.green} fill={C.green} fillOpacity={0.08} strokeWidth={1.5} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -858,7 +1010,7 @@ export default function SpaceXDashboard() {
               <tbody>
                 {competitorData.map((c, i) => (
                   <tr key={i}>
-                    <td className={`font-medium ${i === 0 ? "text-blue-600 font-semibold" : ""}`}>{c.name}</td>
+                    <td className={`font-semibold ${i === 0 ? "text-blue-600" : "text-slate-700"}`}>{c.name}</td>
                     <td>{c.launches2024}</td>
                     <td>{c.launches2025}</td>
                     <td>${c.revenue}B</td>
@@ -866,7 +1018,7 @@ export default function SpaceXDashboard() {
                     <td>
                       <div className="flex items-center gap-2">
                         <div className="prog-bar w-16 sm:w-20">
-                          <div className="h-full rounded-full" style={{ width: `${c.reuse}%`, background: c.reuse > 50 ? C.green : c.reuse > 0 ? C.yellow : C.red }} />
+                          <div style={{ width: `${c.reuse}%`, background: c.reuse > 50 ? C.green : c.reuse > 0 ? C.yellow : C.red }} />
                         </div>
                         <span className="text-slate-500 text-xs">{c.reuse > 0 ? `${c.reuse}%` : "None"}</span>
                       </div>
@@ -875,7 +1027,7 @@ export default function SpaceXDashboard() {
                 ))}
               </tbody>
             </table>
-            <ChartNote>SpaceX revenue per the S-1 ($18.7B). Competitors are estimates. ULA is a Boeing/Lockheed JV. Reuse % reflects demonstrated orbital-class booster reuse.</ChartNote>
+            <ChartNote>SpaceX revenue per the S-1 ($18.7B). Competitors are estimates. ULA is a Boeing/Lockheed JV.</ChartNote>
           </div>
         </div>
       </Section>
@@ -883,15 +1035,15 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ GOV CONTRACTS ══════ */}
-      <Section title="Government Contracts" sub="The U.S. government (NASA, DoD, Space Force) is SpaceX's anchor customer, representing 20.9% of 2025 revenue. SpaceX launched 11 of 12 NSSL missions in 2025.">
-        <div className="card p-5 sm:p-6 md:p-8">
+      <Section id="govcontracts" title="Government Contracts" sub="The U.S. government (NASA, DoD, Space Force) is SpaceX's anchor customer, representing 20.9% of 2025 revenue. SpaceX launched 11 of 12 NSSL missions in 2025.">
+        <div className="card p-5 sm:p-7">
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={govContracts} layout="vertical" margin={{ left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-              <XAxis type="number" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${v}B`} />
-              <YAxis type="category" dataKey="name" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 10 }} width={120} />
+              <CartesianGrid {...GRID} />
+              <XAxis type="number" {...AXIS} tickFormatter={(v) => `$${v}B`} />
+              <YAxis type="category" dataKey="name" {...AXIS} width={130} />
               <Tooltip content={<Tip />} />
-              <Bar dataKey="value" name="Value ($B)" radius={[0, 4, 4, 0]}>
+              <Bar dataKey="value" name="Value ($B)" radius={[0, 6, 6, 0]}>
                 {govContracts.map((e, i) => (
                   <Cell key={i} fill={e.agency === "NASA" ? C.blue : C.orange} />
                 ))}
@@ -901,51 +1053,51 @@ export default function SpaceXDashboard() {
           <div className="flex gap-6 mt-3 justify-center">
             {([["NASA", C.blue], ["DoD / Space Force", C.orange]] as [string, string][]).map(([l, c]) => (
               <span key={l} className="flex items-center gap-2 text-xs text-slate-500">
-                <span className="w-3 h-2 rounded-sm" style={{ background: c }} />{l}
+                <span className="w-3 h-2 rounded-sm inline-block" style={{ background: c }} />{l}
               </span>
             ))}
           </div>
-          <ChartNote>S-1 discloses Customer A (U.S. federal government) = 20.9% of 2025 revenue (~$3.9B). SpaceX also launched all 5 U.S. crew and cargo missions to ISS in 2025.</ChartNote>
+          <ChartNote>Customer A (U.S. federal government) = 20.9% of 2025 revenue (~$3.9B). SpaceX also launched all 5 U.S. crew and cargo missions to ISS in 2025.</ChartNote>
         </div>
       </Section>
 
       <div className="accent-rule" />
 
       {/* ══════ IPO COMPS ══════ */}
-      <Section title="Valuation Comps" sub="At a $1.5T target valuation on $18.7B in 2025 revenue, SpaceX would carry a ~97x revenue multiple — the richest for any mega-IPO in history.">
-        <div className="card p-5 sm:p-6 md:p-8">
+      <Section id="comps" title="Valuation Comps" sub="At a $1.75T target valuation on $18.7B in 2025 revenue, SpaceX would carry a ~94x revenue multiple — the richest for any mega-IPO in history.">
+        <div className="card p-5 sm:p-7">
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={ipoCompsData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-              <XAxis dataKey="name" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-              <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `${v}x`} />
+              <CartesianGrid {...GRID} />
+              <XAxis dataKey="name" {...AXIS} />
+              <YAxis {...AXIS} tickFormatter={(v) => `${v}x`} />
               <Tooltip content={<Tip />} />
-              <Bar dataKey="multiple" name="Revenue Multiple" radius={[3, 3, 0, 0]}>
+              <Bar dataKey="multiple" name="Revenue Multiple" radius={[4, 4, 0, 0]}>
                 {ipoCompsData.map((e, i) => (
                   <Cell key={i} fill={e.name === "SpaceX" ? C.blue : "#cbd5e1"} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <ChartNote>At ~94x revenue ($1.75T / $18.7B), SpaceX would carry the richest multiple of any mega-IPO in history. Justified by: Starlink&apos;s 63% EBITDA margin, hyper-growth trajectory, xAI AI platform optionality, Anthropic compute revenue ($15B/yr), and Starship unlocking orbital AI compute. Aramco and Uber multiples at IPO date.</ChartNote>
+          <ChartNote>At ~94x revenue ($1.75T / $18.7B), SpaceX carries the richest multiple of any mega-IPO in history. Justified by Starlink&apos;s 63% EBITDA margin, Anthropic compute revenue ($15B/yr), and Starship optionality.</ChartNote>
         </div>
       </Section>
 
       <div className="accent-rule" />
 
       {/* ══════ VALUATION SCENARIOS ══════ */}
-      <Section title="Valuation Scenarios" sub="SpaceX's $1.75T target valuation implies a 94x revenue multiple on 2025 revenue. The range of analyst scenarios and their implied revenue multiples.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <Section id="valuation" title="Valuation Scenarios" sub="SpaceX's $1.75T target valuation implies a 94x revenue multiple on 2025 revenue. The range of analyst scenarios and their implied revenue multiples.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Valuation Scenarios ($T)</h3>
-            <p className="text-xs text-slate-500 mb-4">Four scenarios from analyst consensus. At $1.75T (target), SpaceX would surpass Saudi Aramco&apos;s 2019 IPO peak as the highest-valued company ever listed. At $2.5T, it would rival Apple and Nvidia.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Valuation Scenarios ($T)</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">At $1.75T, SpaceX would surpass Saudi Aramco&apos;s 2019 IPO peak as the highest-valued company ever listed.</p>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={valuationScenarios} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis type="number" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${v}T`} domain={[0, 2800]} />
-                <YAxis type="category" dataKey="scenario" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} width={80} />
+                <CartesianGrid {...GRID} />
+                <XAxis type="number" {...AXIS} tickFormatter={(v) => `$${v / 1000}T`} domain={[0, 2800]} />
+                <YAxis type="category" dataKey="scenario" {...AXIS} width={90} />
                 <Tooltip content={<Tip />} />
-                <Bar dataKey="valuation" name="Valuation ($B)" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="valuation" name="Valuation ($B)" radius={[0, 6, 6, 0]}>
                   {valuationScenarios.map((s, i) => (
                     <Cell key={i} fill={i === 1 ? C.sky : i === 0 ? "#cbd5e1" : i === 2 ? C.blue : C.orange} />
                   ))}
@@ -957,15 +1109,15 @@ export default function SpaceXDashboard() {
             {valuationScenarios.map((s, i) => {
               const colors = ["#cbd5e1", C.sky, C.blue, C.orange];
               return (
-                <div key={i} className="ipo-card" style={{ borderColor: `${colors[i]}25` }}>
-                  <div className="text-[9px] tracking-[0.15em] uppercase mb-1" style={{ color: colors[i] }}>{s.scenario}</div>
+                <div key={i} className="ipo-card" style={{ borderColor: `${colors[i]}30` }}>
+                  <div className="text-[10px] tracking-[0.15em] uppercase mb-1 font-semibold" style={{ color: colors[i] }}>{s.scenario}</div>
                   <div className="text-2xl font-bold text-slate-900 mb-1">${(s.valuation / 1000).toFixed(2)}T</div>
                   <div className="text-xs text-slate-500">{s.revenueMultiple}x 2025 revenue</div>
                 </div>
               );
             })}
-            <div className="col-span-2 p-4 rounded-lg bg-slate-50 border border-slate-200 text-sm text-slate-500 leading-relaxed">
-              At the $1.75T target: SpaceX would be larger than Amazon ($2.2T) at today&apos;s prices. Connectivity alone at 63% EBITDA margins and 50% growth would justify ~$500B as a standalone. The remainder prices in AI, Starship, and optionality.
+            <div className="col-span-2 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm text-slate-500 leading-relaxed">
+              At the $1.75T target: SpaceX would be larger than Amazon ($2.2T) at today&apos;s prices. Connectivity alone at 63% EBITDA margins and 50% growth would justify ~$500B as a standalone.
             </div>
           </div>
         </div>
@@ -974,18 +1126,18 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ TAM BREAKDOWN ══════ */}
-      <Section title="Total Addressable Market" sub="SpaceX claims a $28.5T TAM (ex China, ex Russia). The surprise: 93% of it is AI. The rocket business is $370B — just 1.3% of total TAM.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <Section id="tam" title="Total Addressable Market" sub="SpaceX claims a $28.5T TAM (ex China, ex Russia). The surprise: 93% of it is AI. The rocket business is $370B — just 1.3% of total TAM.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">TAM by Segment ($B)</h3>
-            <p className="text-xs text-slate-500 mb-4">The S-1 frames SpaceX as an AI company that happens to own a rocket and satellite business. AI infrastructure alone ($2.4T) is 6.5x the entire connectivity TAM.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">TAM by Segment ($B)</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">The S-1 frames SpaceX as an AI company that owns a rocket and satellite business. AI infrastructure alone ($2.4T) is 6.5x the entire connectivity TAM.</p>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={tamBreakdown} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis type="number" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}T` : `$${v}B`} />
-                <YAxis type="category" dataKey="segment" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 10 }} width={160} />
+                <CartesianGrid {...GRID} />
+                <XAxis type="number" {...AXIS} tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}T` : `$${v}B`} />
+                <YAxis type="category" dataKey="segment" {...AXIS} width={170} />
                 <Tooltip content={<Tip />} />
-                <Bar dataKey="value" name="TAM ($B)" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="value" name="TAM ($B)" radius={[0, 6, 6, 0]}>
                   {tamBreakdown.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Bar>
               </BarChart>
@@ -993,17 +1145,17 @@ export default function SpaceXDashboard() {
             <ChartNote>Total TAM: $28.5T. AI: $26.5T (93%). Connectivity: $1.6T (5.6%). Space: $370B (1.3%). This framing justifies the premium multiple.</ChartNote>
           </div>
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">AI TAM Sub-Breakdown ($B)</h3>
-            <p className="text-xs text-slate-500 mb-4">Enterprise AI applications ($22.7T) dwarf every other category. SpaceX&apos;s play is to be the compute backbone — via Colossus clusters, the Grok API, and eventually orbital AI infrastructure.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">AI TAM Sub-Breakdown</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">Enterprise AI applications ($22.7T) dwarf every other category. SpaceX&apos;s play: be the compute backbone via Colossus clusters, the Grok API, and eventually orbital AI infrastructure.</p>
             <div className="space-y-3 mt-2">
               {tamDetail.map((item, i) => {
                 const segColor = item.parent === "AI" ? C.orange : item.parent === "Connectivity" ? C.sky : C.blue;
                 const maxVal = 22700;
                 return (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="text-xs text-slate-500 w-36 flex-shrink-0">{item.name}</div>
+                    <div className="text-xs text-slate-500 w-40 flex-shrink-0">{item.name}</div>
                     <div className="flex-1 prog-bar">
-                      <div className="h-full rounded-full" style={{ width: `${(item.value / maxVal) * 100}%`, background: segColor }} />
+                      <div style={{ width: `${(item.value / maxVal) * 100}%`, background: segColor }} />
                     </div>
                     <div className="text-xs font-bold w-14 text-right" style={{ color: segColor }}>
                       {item.value >= 1000 ? `$${(item.value / 1000).toFixed(1)}T` : `$${item.value}B`}
@@ -1019,22 +1171,22 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ STRATEGIC DEALS ══════ */}
-      <Section title="Strategic Deals" sub="Three major deals disclosed in the S-1 — totaling over $94B in value. The Anthropic compute contract alone is $15B/year, instantly making SpaceX one of the largest AI cloud providers.">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <Section id="deals" title="Strategic Deals" sub="Three major deals disclosed in the S-1 — totaling over $94B in value. The Anthropic compute contract alone is $15B/year, instantly making SpaceX one of the largest AI cloud providers.">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
           {strategicDeals.map((deal, i) => (
-            <div key={i} className="ipo-card" style={{ borderColor: `${deal.color}25` }}>
-              <div className="text-[9px] tracking-[0.15em] uppercase mb-2" style={{ color: deal.color }}>Strategic Deal</div>
+            <div key={i} className="ipo-card" style={{ borderColor: `${deal.color}30` }}>
+              <div className="text-[10px] tracking-[0.15em] uppercase mb-2 font-semibold" style={{ color: deal.color }}>Strategic Deal</div>
               <div className="text-lg font-bold text-slate-900 mb-1">{deal.name}</div>
               <div className="text-2xl font-bold mb-2" style={{ color: deal.color }}>
                 {deal.value >= 1000 ? `$${(deal.value / 1000).toFixed(0)}B` : `$${deal.value}M`}
                 {deal.name === "Anthropic Compute" ? "/yr" : ""}
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed">{deal.note}</p>
+              <p className="text-xs text-slate-500 leading-relaxed">{deal.note}</p>
             </div>
           ))}
         </div>
         <div className="card p-5 sm:p-6">
-          <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-3">Anthropic Compute Deal — The $45B Contract</h3>
+          <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-4">Anthropic Compute Deal — The $45B Contract</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[
               { label: "Monthly Fee", value: "$1.25B", desc: "Anthropic pays SpaceX to train on Colossus/Colossus II" },
@@ -1042,8 +1194,8 @@ export default function SpaceXDashboard() {
               { label: "Total Contract", value: "$45B", desc: "Through May 2029 — 3 year term, 90-day termination" },
               { label: "Infrastructure", value: "~220K GPUs", desc: "Colossus (H100) + Colossus II (GB200/GB300) combined" },
             ].map((s, i) => (
-              <div key={i} className="p-4 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-[9px] tracking-[0.12em] text-slate-500 uppercase mb-1">{s.label}</div>
+              <div key={i} className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="text-[10px] tracking-[0.12em] text-slate-400 uppercase mb-1 font-semibold">{s.label}</div>
                 <div className="text-xl font-bold mb-1" style={{ color: C.sky }}>{s.value}</div>
                 <div className="text-xs text-slate-500">{s.desc}</div>
               </div>
@@ -1056,18 +1208,18 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ DEBT & GOVERNANCE ══════ */}
-      <Section title="Debt Structure & Governance" sub="SpaceX has $29.1B in total debt — including a $20B bridge loan due September 2027 that must be refinanced (or repaid with IPO proceeds). Musk holds 10:1 supervoting Class B shares.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <Section id="debt" title="Debt Structure & Governance" sub="SpaceX has $29.1B in total debt — including a $20B bridge loan due September 2027 that must be refinanced or repaid with IPO proceeds. Musk holds 10:1 supervoting Class B shares.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Debt Breakdown ($M)</h3>
-            <p className="text-xs text-slate-500 mb-4">The $20B Goldman Sachs bridge loan (signed March 2, 2026) is the critical near-term item — due September 2027. IPO proceeds or debt refinancing must address it.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Debt Breakdown</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">The $20B Goldman Sachs bridge loan (signed March 2, 2026) is the critical near-term item — due September 2027.</p>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={debtStructure} layout="vertical" margin={{ left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis type="number" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
-                <YAxis type="category" dataKey="name" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 10 }} width={190} />
+                <CartesianGrid {...GRID} />
+                <XAxis type="number" {...AXIS} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
+                <YAxis type="category" dataKey="name" {...AXIS} width={195} />
                 <Tooltip content={<Tip />} />
-                <Bar dataKey="value" name="Outstanding ($M)" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="value" name="Outstanding ($M)" radius={[0, 6, 6, 0]}>
                   {debtStructure.map((d, i) => <Cell key={i} fill={d.urgent ? C.red : C.blue} />)}
                 </Bar>
               </BarChart>
@@ -1075,20 +1227,20 @@ export default function SpaceXDashboard() {
             <ChartNote>Total principal: $29.1B. SpaceX Credit Facility ($5B capacity) is currently undrawn. $9.1B AI infra financing reflects failed AI asset sale-leaseback that converted to debt.</ChartNote>
           </div>
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-3">Share Structure & Governance</h3>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-4">Share Structure & Governance</h3>
             <div className="space-y-3">
               {[
                 { label: "Class A (1 vote/share)", detail: "2,882M outstanding. Public float. No special rights.", color: C.blue },
                 { label: "Class B (10 votes/share)", detail: "2,421M outstanding. Musk controlled. Elects 51%+ of board. Converts to Class A on transfer.", color: C.orange },
-                { label: "Class C (→ Class A at IPO)", detail: "494M shares reclassified to Class A upon IPO completion.", color: "#cbd5e1" },
+                { label: "Class C (→ Class A at IPO)", detail: "494M shares reclassified to Class A upon IPO completion.", color: "#94a3b8" },
                 { label: "Preferred Stock (→ Class A + B)", detail: "$7B book value. Converts upon IPO (Preferred Conversion). ~6.7B new shares pro forma.", color: C.yellow },
                 { label: "Controlled Company", detail: "Musk's Class B shares give effective voting control. Board need not have independent majority.", color: C.red },
                 { label: "Mandatory Arbitration", detail: "No jury trials, no class actions, 3% derivative threshold. Governance concerns cited as top risk.", color: C.red },
               ].map((item, i) => (
-                <div key={i} className="flex gap-3 items-start p-3 rounded-lg bg-slate-50 border border-slate-100">
+                <div key={i} className="flex gap-3 items-start p-3 rounded-xl bg-slate-50 border border-slate-100">
                   <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ background: item.color }} />
                   <div>
-                    <div className="text-xs font-medium text-slate-900 mb-0.5">{item.label}</div>
+                    <div className="text-xs font-semibold text-slate-900 mb-0.5">{item.label}</div>
                     <div className="text-xs text-slate-500">{item.detail}</div>
                   </div>
                 </div>
@@ -1100,31 +1252,31 @@ export default function SpaceXDashboard() {
 
       <div className="accent-rule" />
 
-      {/* ══════ INTERNAL VS CUSTOMER LAUNCHES ══════ */}
-      <Section title="Launch Economics" sub="Of SpaceX's 170 launches in 2025, only 43 (25%) were for paying customers. The majority — 122 — were internal Starlink constellation deployments, which generate no Space segment revenue but directly power the $11.4B Connectivity business.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      {/* ══════ LAUNCH ECONOMICS ══════ */}
+      <Section id="economics" title="Launch Economics" sub="Of SpaceX's 170 launches in 2025, only 43 (25%) were for paying customers. The majority — 122 — were internal Starlink constellation deployments.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Internal vs. Customer Launches</h3>
-            <p className="text-xs text-slate-500 mb-4">SpaceX doesn&apos;t recognize inter-segment revenue for Starlink deployments. The rocket business looks smaller than it is — but internally it&apos;s the enabler of a $11.4B revenue stream.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Internal vs. Customer Launches</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">SpaceX doesn&apos;t recognize inter-segment revenue for Starlink deployments. Internally, the rocket business is the enabler of an $11.4B revenue stream.</p>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={internalVsCustomer}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
-                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
-                <YAxis stroke={C.dim} tick={{ fill: "#64748b", fontSize: 11 }} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis {...AXIS} />
                 <Tooltip content={<Tip />} />
-                <Legend wrapperStyle={{ color: '#64748b', fontSize: 12 }} />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: 11 }} />
                 <Bar dataKey="internal" name="Internal (Starlink)" stackId="a" fill={C.sky} />
-                <Bar dataKey="customer" name="Customer Launches" stackId="a" fill={C.blue} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="customer" name="Customer Launches" stackId="a" fill={C.blue} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-            <ChartNote>Customer launches drive Space segment revenue ($4.1B in 2025). Internal launches fund Connectivity growth. Both are essential — but only customer launches appear in the P&L.</ChartNote>
+            <ChartNote>Customer launches drive Space segment revenue ($4.1B in 2025). Internal launches fund Connectivity growth. Both are essential.</ChartNote>
           </div>
           <div className="card p-5 sm:p-6">
-            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-3">X Platform Metrics (AI Segment)</h3>
-            <p className="text-xs text-slate-500 mb-4">X is the distribution and data engine for Grok — 350M daily posts create a proprietary real-time training stream. X + Grok form a flywheel no other AI company can replicate.</p>
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-3">X Platform Metrics (AI Segment)</h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">X is the distribution and data engine for Grok — 350M daily posts create a proprietary real-time training stream no other AI company can replicate.</p>
             <div className="space-y-3">
               {xPlatformMetrics.map((item, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-slate-100">
+                <div key={i} className="flex items-center justify-between py-2.5 border-b border-slate-100">
                   <span className="text-sm text-slate-500">{item.metric}</span>
                   <div className="text-right">
                     <div className="text-sm font-bold text-slate-900">{item.value}</div>
@@ -1140,31 +1292,31 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ STARSHIP TESTS ══════ */}
-      <Section title="Starship Flight Tests" sub="Eleven Integrated Flight Tests across 2023–2026. From total failure to commercial payload readiness in under 3 years — the fastest development timeline for a super-heavy launch vehicle in history.">
+      <Section id="starship" title="Starship Flight Tests" sub="Eleven Integrated Flight Tests across 2023–2026. From total failure to commercial payload readiness in under 3 years — the fastest development timeline for a super-heavy launch vehicle in history.">
         <div className="card overflow-x-auto">
           <table className="w-full sx-table min-w-[480px]">
             <thead><tr>{["Flight", "Date", "Result", "Milestone"].map((h) => <th key={h}>{h}</th>)}</tr></thead>
             <tbody>
               {starshipTests.map((fl, i) => (
                 <tr key={i}>
-                  <td className="font-mono text-slate-900 font-semibold">{fl.f}</td>
+                  <td className="font-mono text-slate-900 font-bold">{fl.f}</td>
                   <td>{fl.d}</td>
-                  <td><span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ color: fl.c, background: `${fl.c}18` }}>{fl.r}</span></td>
+                  <td><span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ color: fl.c, background: `${fl.c}18` }}>{fl.r}</span></td>
                   <td className="text-slate-500">{fl.detail}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <ChartNote>Starship produces 16.7M lbf of thrust — ~2x Saturn V. The S-1 confirms 11 flight tests as of filing. Commercial payload operations expected H2 2026. Target cost: $67/kg to LEO (Falcon 9 today: $2,700/kg; historical avg: $18,500/kg).</ChartNote>
+          <ChartNote>Starship produces 16.7M lbf of thrust — ~2x Saturn V. 11 flight tests confirmed in S-1. Commercial payload operations expected H2 2026. Target cost: $67/kg to LEO.</ChartNote>
         </div>
       </Section>
 
       <div className="accent-rule" />
 
       {/* ══════ TIMELINE ══════ */}
-      <Section title="The SpaceX Story" sub="Key milestones across 24 years — from a startup with three failed launches to the most valuable company to ever file for IPO.">
+      <Section id="timeline" title="The SpaceX Story" sub="Key milestones across 24 years — from a startup with three failed launches to the most valuable company to ever file for IPO.">
         <div className="relative">
-          <div className="absolute left-[5px] md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-blue-400/40 to-transparent md:-translate-x-px" />
+          <div className="absolute left-[5px] md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-blue-400/35 to-transparent md:-translate-x-px" />
           <div className="space-y-5 sm:space-y-6">
             {milestones.map((m, i) => (
               <div key={i} className={`tl-item relative flex items-start ${i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"}`}>
@@ -1174,7 +1326,7 @@ export default function SpaceXDashboard() {
                 </div>
                 <div className={`ml-7 md:ml-0 md:w-1/2 ${i % 2 === 0 ? "md:pl-8" : "md:pr-8 md:text-right"}`}>
                   <div className={`flex items-center gap-2 mb-0.5 ${i % 2 !== 0 ? "md:justify-end" : ""}`}>
-                    <span className="text-xs font-mono text-blue-600/80">{m.year}</span>
+                    <span className="text-xs font-mono text-blue-500/80 font-semibold">{m.year}</span>
                     <span className="text-slate-900 font-semibold text-sm">{m.event}</span>
                   </div>
                   <p className="text-sm text-slate-500">{m.desc}</p>
@@ -1188,27 +1340,15 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ BY THE NUMBERS ══════ */}
-      <Section title="By The Numbers" sub="Official figures from the SpaceX S-1 filing.">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {[
-            { val: "$18.7B", unit: "", label: "2025 Revenue (S-1 actual)" },
-            { val: "49.4", unit: "%", label: "2025 Gross Margin" },
-            { val: "170", unit: "", label: "2025 orbital launches (record)" },
-            { val: "2,213", unit: "t", label: "Mass to orbit 2025 (metric tons)" },
-            { val: "10.3M", unit: "", label: "Starlink subscribers (Q1 '26)" },
-            { val: "$7.2B", unit: "", label: "Connectivity Adj. EBITDA (2025)" },
-            { val: "11", unit: "", label: "Starship flight tests to date" },
-            { val: "650+", unit: "", label: "Total orbital launches ever" },
-            { val: "$1.25B", unit: "/mo", label: "Anthropic compute contract" },
-            { val: "$29.1B", unit: "", label: "Total debt outstanding" },
-            { val: "550M", unit: "", label: "X Monthly Active Users (Q1 '26)" },
-            { val: "$102B", unit: "", label: "Total assets (Mar 31, 2026)" },
-          ].map((s, i) => (
-            <div key={i} className="stat-card p-4 sm:p-5 text-center">
-              <div className="text-2xl sm:text-3xl font-bold text-slate-900 mb-0.5">
-                {s.val}<span className="text-sm ml-0.5" style={{ color: C.blue }}>{s.unit}</span>
+      <Section id="numbers" title="By The Numbers" sub="Official figures from the SpaceX S-1 filing. Numbers animate as you scroll into view.">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {byTheNumbers.map((s, i) => (
+            <div key={i} className="stat-card p-5 sm:p-6 text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1 kpi-number">
+                <AnimNum target={s.target} fmt={s.fmt} />
+                {s.unit && <span className="text-sm ml-0.5" style={{ color: C.blue }}>{s.unit}</span>}
               </div>
-              <div className="text-[10px] text-slate-500 leading-tight">{s.label}</div>
+              <div className="text-[10px] text-slate-400 leading-tight">{s.label}</div>
             </div>
           ))}
         </div>
@@ -1217,20 +1357,23 @@ export default function SpaceXDashboard() {
       <div className="accent-rule" />
 
       {/* ══════ RISK/REWARD ══════ */}
-      <Section title="IPO Risk / Reward" sub="The bull and bear cases investors must weigh before the largest public offering in history.">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <Section id="risks" title="IPO Risk / Reward" sub="The bull and bear cases investors must weigh before the largest public offering in history.">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { tag: "BULL", title: "Starlink: $7.2B EBITDA Machine", desc: "63% Adjusted EBITDA margin on $11.4B revenue. Doubling subscribers every 18 months. Enterprise, government, and mobile are all still early innings.", color: C.green },
             { tag: "BULL", title: "Structural Launch Monopoly", desc: "170 launches in 2025 — more than every other entity on Earth combined. Falcon 9's 34-reuse record means each marginal launch costs ~$15M vs. $100M+ for competitors.", color: C.green },
             { tag: "BULL", title: "Starship + Orbital AI Compute", desc: "At $67/kg, Starship makes orbital data centers economically viable. SpaceX already has the satellite manufacturing, in-orbit engineering, and launch cadence to execute.", color: C.green },
             { tag: "BEAR", title: "$4.9B Net Loss in 2025", desc: "GAAP losses driven by $8.6B in R&D (46% of revenue). AI segment lost $6.4B from operations. Requires sustained conviction that AI infrastructure investment will generate returns.", color: C.red },
-            { tag: "BEAR", title: "97x Revenue Multiple", desc: "The richest multiple in mega-IPO history. Requires Starlink to continue growing at 50%+, xAI to monetize at scale, and Starship to achieve full reusability. Any slip compounds the premium risk.", color: C.red },
+            { tag: "BEAR", title: "94x Revenue Multiple", desc: "The richest multiple in mega-IPO history. Requires Starlink to continue growing at 50%+, xAI to monetize at scale, and Starship to achieve full reusability. Any slip compounds the premium risk.", color: C.red },
             { tag: "BEAR", title: "Key-Person & Regulatory Risk", desc: "Elon Musk leads SpaceX, xAI, X, Tesla, and DOGE simultaneously. Spectrum regulation (FCC, international) can throttle Starlink growth. Government customer concentration at 20.9% of revenue.", color: C.red },
           ].map((card, i) => (
-            <div key={i} className="ipo-card" style={{ borderColor: `${card.color}20` }}>
-              <span className="text-[10px] tracking-[0.15em] font-semibold mb-3 inline-block" style={{ color: card.color }}>{card.tag}</span>
-              <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2">{card.title}</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">{card.desc}</p>
+            <div key={i} className="ipo-card" style={{ borderColor: `${card.color}22` }}>
+              <span className="inline-flex items-center gap-1.5 text-[10px] tracking-[0.15em] font-bold mb-3">
+                <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: card.color }} />
+                <span style={{ color: card.color }}>{card.tag}</span>
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-2">{card.title}</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">{card.desc}</p>
             </div>
           ))}
         </div>
@@ -1243,11 +1386,11 @@ export default function SpaceXDashboard() {
             All financial data sourced directly from Space Exploration Technologies Corp. S-1 Registration Statement filed with the SEC (May 2026). Revenue, loss, and EBITDA figures reflect the combined company including xAI and X Holdings Corp. Not investment advice.
           </p>
           <div className="flex items-center gap-5 text-sm">
-            <a href="https://x.com/Trace_Cohen" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-blue-600 transition-colors">
+            <a href="https://x.com/Trace_Cohen" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-blue-600 transition-colors font-medium">
               @Trace_Cohen
             </a>
             <span className="text-slate-300">|</span>
-            <a href="mailto:t@nyvp.com" className="text-slate-400 hover:text-blue-600 transition-colors">
+            <a href="mailto:t@nyvp.com" className="text-slate-400 hover:text-blue-600 transition-colors font-medium">
               t@nyvp.com
             </a>
           </div>
