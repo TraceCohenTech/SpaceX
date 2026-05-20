@@ -7,7 +7,7 @@ import {
   PolarRadiusAxis, ComposedChart, ReferenceLine,
 } from "recharts";
 
-// ─── ACTUAL S-1 DATA (filed May 2026) ──────────────────────────────────
+// ─── ACTUAL S-1 DATA (filed May 20, 2026) ──────────────────────────────
 
 const pnlData = [
   { period: "2023", revenue: 10387, cogs: 6110, grossProfit: 4277, rd: 2105, sga: 1665, restructuring: 237, impairment: 3775, operatingIncome: -3505, netIncome: -4628, grossMargin: 41.2 },
@@ -114,12 +114,66 @@ const competitorData = [
 ];
 
 const ipoCompsData = [
-  { name: "SpaceX", multiple: 97, type: "target" },
+  { name: "SpaceX", multiple: 94, type: "target" },
   { name: "Rivian", multiple: 90, type: "ipo" },
   { name: "Palantir", multiple: 55, type: "current" },
   { name: "RKLB", multiple: 28, type: "current" },
   { name: "Aramco", multiple: 18, type: "ipo" },
   { name: "Uber", multiple: 8, type: "ipo" },
+];
+
+const valuationScenarios = [
+  { scenario: "Low", valuation: 1250, revenueMultiple: 67 },
+  { scenario: "Target", valuation: 1750, revenueMultiple: 94 },
+  { scenario: "High", valuation: 2000, revenueMultiple: 107 },
+  { scenario: "Extreme Bull", valuation: 2500, revenueMultiple: 134 },
+];
+
+const tamBreakdown = [
+  { segment: "AI (Infrastructure + Apps)", value: 26500, color: "#f97316" },
+  { segment: "Connectivity (Broadband + Mobile)", value: 1600, color: "#22d3ee" },
+  { segment: "Space (Launch Services)", value: 370, color: "#3b82f6" },
+];
+
+const tamDetail = [
+  { name: "Enterprise AI Apps", value: 22700, parent: "AI" },
+  { name: "AI Infrastructure", value: 2400, parent: "AI" },
+  { name: "Consumer AI Subs", value: 760, parent: "AI" },
+  { name: "Digital Advertising", value: 600, parent: "AI" },
+  { name: "Starlink Broadband", value: 870, parent: "Connectivity" },
+  { name: "Starlink Mobile", value: 740, parent: "Connectivity" },
+  { name: "Space / Launch", value: 370, parent: "Space" },
+];
+
+const debtStructure = [
+  { name: "Bridge Loan (Goldman)", value: 20000, due: "Sep 2027", urgent: true },
+  { name: "AI Infra Financing (failed sale-leaseback)", value: 9105, due: "Ongoing", urgent: false },
+  { name: "SpaceX Credit Facility (BofA)", value: 0, due: "2031", urgent: false },
+  { name: "X Notes (2027/2030)", value: 27, due: "2027/2030", urgent: false },
+];
+
+const strategicDeals = [
+  { name: "Anthropic Compute", value: 15000, note: "$1.25B/month, through May 2029 — Anthropic trains on Colossus", color: "#22d3ee" },
+  { name: "EchoStar Spectrum", value: 19600, note: "$19.6B for AWS-3/4 + H-Block spectrum (65 MHz, FCC approved May 12)", color: "#f97316" },
+  { name: "Cursor (Anysphere)", value: 60000, note: "$60B implied equity — GPU compute + Grok model integration", color: "#10b981" },
+];
+
+// starshipTests defined after C (needs color references)
+
+const internalVsCustomer = [
+  { year: "2023", internal: 63, customer: 33, total: 98 },
+  { year: "2024", internal: 89, customer: 45, total: 138 },
+  { year: "2025", internal: 122, customer: 43, total: 170 },
+  { year: "Q1 '26", internal: 33, customer: 7, total: 40 },
+];
+
+const xPlatformMetrics = [
+  { metric: "Monthly Active Users", value: "550M", note: "Q1 2026" },
+  { metric: "Registered Accounts", value: "1.3B+", note: "Last 12 months" },
+  { metric: "Daily Posts", value: "350M", note: "Avg, Q1 2026" },
+  { metric: "Grok AI MAUs", value: "117M", note: "Q1 2026" },
+  { metric: "AI-Generated Images", value: "~10B/month", note: "Q1 2026 avg" },
+  { metric: "AI-Generated Videos", value: "~2B/month", note: "Q1 2026 avg" },
 ];
 
 const boosterReuse = [
@@ -175,6 +229,20 @@ const C = {
   grid: "rgba(59,130,246,0.08)",
 };
 
+const starshipTests = [
+  { f: "IFT-1", d: "Apr 2023", r: "FAILURE", c: C.red, detail: "FTS activated at T+4 min — vehicle tumbled after liftoff" },
+  { f: "IFT-2", d: "Nov 2023", r: "PARTIAL", c: C.yellow, detail: "First successful stage separation achieved" },
+  { f: "IFT-3", d: "Mar 2024", r: "PARTIAL", c: C.yellow, detail: "Reached space — valuable re-entry data collected" },
+  { f: "IFT-4", d: "Jun 2024", r: "SUCCESS", c: C.green, detail: "Both stages survived — first full-profile flight" },
+  { f: "IFT-5", d: "Oct 2024", r: "HISTORIC", c: C.cyan, detail: "Super Heavy caught by Mechazilla tower arms" },
+  { f: "IFT-6", d: "Nov 2024", r: "SUCCESS", c: C.green, detail: "Ship orbited, in-space Raptor relight, controlled splashdown" },
+  { f: "IFT-7", d: "Jan 2025", r: "FAILURE", c: C.red, detail: "Propellant leak — Ship lost over Turks & Caicos, booster catch aborted" },
+  { f: "IFT-8", d: "2025", r: "SUCCESS", c: C.green, detail: "Upper stage catch demonstrated; booster recovery refined" },
+  { f: "IFT-9", d: "2025", r: "SUCCESS", c: C.green, detail: "Continued full-profile testing, reentry improvements" },
+  { f: "IFT-10", d: "2025–2026", r: "SUCCESS", c: C.green, detail: "Back-to-back successful flights; operational profile established" },
+  { f: "IFT-11", d: "2026", r: "SUCCESS", c: C.cyan, detail: "Final test ahead of commercial payload operations (H2 2026)" },
+];
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function Tip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -224,7 +292,7 @@ export default function SpaceXDashboard() {
         <img src="https://i.redd.it/2r38gq2b2bg31.jpg" alt="SpaceX rocket launch" className="hero-bg" />
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl w-full">
           <div className="fade-in-up delay-1">
-            <span className="tag mb-6 sm:mb-8 inline-block">S-1 Filed May 2026 — IPO Imminent</span>
+            <span className="tag mb-6 sm:mb-8 inline-block">SPCX · Nasdaq · S-1 Filed May 20, 2026</span>
           </div>
           <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter mb-4 sm:mb-6 fade-in-up delay-2 text-glow">
             <span className="gradient-text">SPACEX</span>
@@ -233,10 +301,10 @@ export default function SpaceXDashboard() {
             THE ROAD TO
           </p>
           <p className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter mb-6 sm:mb-8 fade-in-up delay-4">
-            <span className="gradient-text">$1.5 TRILLION</span>
+            <span className="gradient-text">$1.75 TRILLION</span>
           </p>
           <p className="text-sm md:text-base text-slate-500 max-w-lg mx-auto fade-in-up delay-5">
-            The largest IPO in history. $18.7B in 2025 revenue. 10.3M Starlink subscribers. Now with xAI and X.
+            The largest IPO in history. $18.7B in 2025 revenue. 10.3M Starlink subscribers. xAI, X, and a $28.5T TAM.
           </p>
         </div>
         <div className="absolute bottom-6 sm:bottom-8 z-10 fade-in-up delay-6">
@@ -268,12 +336,12 @@ export default function SpaceXDashboard() {
       <Section title="IPO Overview" sub="SpaceX filed its S-1 with the SEC in May 2026. Key facts from the actual filing.">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {[
-            { label: "2025 Revenue", value: "$18.7B", desc: "Three business segments: Space ($4.1B), Connectivity ($11.4B), AI — xAI + X ($3.2B)", color: C.cyan },
-            { label: "2025 Gross Profit", value: "$9.2B", desc: "49.4% gross margin — up from 41.2% in 2023. Connectivity's software-heavy model drives margin expansion.", color: C.green },
-            { label: "2025 Net Loss", value: "$(4.9B)", desc: "GAAP net loss driven by $8.6B R&D spend (46% of revenue) — primarily xAI GPU infrastructure buildout.", color: C.red },
-            { label: "Connectivity EBITDA", value: "$7.2B", desc: "Starlink segment generated $7.2B Adjusted EBITDA in 2025. 63% EBITDA margin. The profit engine.", color: C.orange },
-            { label: "Total Assets", value: "$102B", desc: "Assets grew from $57B (Dec 2024) to $102B (Mar 2026). Servers & networking alone: $22.7B — the xAI footprint.", color: C.yellow },
-            { label: "Contracted Backlog", value: "$28.4B", desc: "$12.1B recognized as deferred revenue. ~32% expected within 1 year. Government is the anchor customer at 20.9% of revenue.", color: C.blue },
+            { label: "IPO Target Valuation", value: "$1.75T", desc: "Ticker: SPCX on Nasdaq. Targeting $75B raise at ~$1.75T valuation. Range: $1.25T–$2.5T. 5:1 stock split completed May 4, 2026.", color: C.cyan },
+            { label: "2025 Revenue", value: "$18.7B", desc: "Three segments: Connectivity $11.4B (61%), Space $4.1B (22%), AI — xAI + X $3.2B (17%). Revenue CAGR 2023–2025: 34%.", color: C.green },
+            { label: "2025 Net Loss", value: "$(4.9B)", desc: "GAAP loss driven by $8.6B R&D (46% of revenue) — primarily xAI GPU buildout. Connectivity alone earned $4.4B operating income.", color: C.red },
+            { label: "Connectivity Adj. EBITDA", value: "$7.2B", desc: "Starlink segment: 63% Adj. EBITDA margin on $11.4B revenue. The profit engine funding all other investments.", color: C.orange },
+            { label: "Total Assets (Mar '26)", value: "$102B", desc: "Assets grew from $57B (Dec 2024) to $102B (Mar 2026) in 15 months. Servers & networking alone: $22.7B.", color: C.yellow },
+            { label: "$28.5T TAM", value: "AI: $26.5T", desc: "AI accounts for 93% of SpaceX's stated $28.5T TAM. Space is only $370B. The real bet is orbital AI and terrestrial compute.", color: C.blue },
           ].map((item, i) => (
             <div key={i} className="ipo-card">
               <div className="text-[10px] tracking-[0.12em] uppercase mb-3" style={{ color: item.color }}>{item.label}</div>
@@ -856,27 +924,225 @@ export default function SpaceXDashboard() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <ChartNote>At ~97x revenue ($1.5T / $18.7B), SpaceX would carry the richest multiple of any mega-IPO in history. Justified by: Starlink&apos;s 63% EBITDA margin, hyper-growth trajectory, xAI AI platform optionality, and Starship unlocking orbital AI compute. Aramco and Uber multiples at IPO date.</ChartNote>
+          <ChartNote>At ~94x revenue ($1.75T / $18.7B), SpaceX would carry the richest multiple of any mega-IPO in history. Justified by: Starlink&apos;s 63% EBITDA margin, hyper-growth trajectory, xAI AI platform optionality, Anthropic compute revenue ($15B/yr), and Starship unlocking orbital AI compute. Aramco and Uber multiples at IPO date.</ChartNote>
+        </div>
+      </Section>
+
+      <div className="accent-rule" />
+
+      {/* ══════ VALUATION SCENARIOS ══════ */}
+      <Section title="Valuation Scenarios" sub="SpaceX's $1.75T target valuation implies a 94x revenue multiple on 2025 revenue. The range of analyst scenarios and their implied revenue multiples.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="card p-4 sm:p-6">
+            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Valuation Scenarios ($T)</h3>
+            <p className="text-xs text-slate-600 mb-4">Four scenarios from analyst consensus. At $1.75T (target), SpaceX would surpass Saudi Aramco&apos;s 2019 IPO peak as the highest-valued company ever listed. At $2.5T, it would rival Apple and Nvidia.</p>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={valuationScenarios} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis type="number" stroke={C.dim} tick={{ fill: C.muted, fontSize: 11 }} tickFormatter={(v) => `$${v}T`} domain={[0, 2800]} />
+                <YAxis type="category" dataKey="scenario" stroke={C.dim} tick={{ fill: C.muted, fontSize: 11 }} width={80} />
+                <Tooltip content={<Tip />} />
+                <Bar dataKey="valuation" name="Valuation ($B)" radius={[0, 4, 4, 0]}>
+                  {valuationScenarios.map((s, i) => (
+                    <Cell key={i} fill={i === 1 ? C.cyan : i === 0 ? C.dim : i === 2 ? C.blue : C.orange} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-2 gap-3 content-start">
+            {valuationScenarios.map((s, i) => {
+              const colors = [C.dim, C.cyan, C.blue, C.orange];
+              return (
+                <div key={i} className="ipo-card" style={{ borderColor: `${colors[i]}25` }}>
+                  <div className="text-[9px] tracking-[0.15em] uppercase mb-1" style={{ color: colors[i] }}>{s.scenario}</div>
+                  <div className="text-2xl font-bold text-white mb-1">${(s.valuation / 1000).toFixed(2)}T</div>
+                  <div className="text-xs text-slate-500">{s.revenueMultiple}x 2025 revenue</div>
+                </div>
+              );
+            })}
+            <div className="col-span-2 p-4 rounded-lg bg-slate-900/40 border border-white/5 text-sm text-slate-500 leading-relaxed">
+              At the $1.75T target: SpaceX would be larger than Amazon ($2.2T) at today&apos;s prices. Connectivity alone at 63% EBITDA margins and 50% growth would justify ~$500B as a standalone. The remainder prices in AI, Starship, and optionality.
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <div className="accent-rule" />
+
+      {/* ══════ TAM BREAKDOWN ══════ */}
+      <Section title="Total Addressable Market" sub="SpaceX claims a $28.5T TAM (ex China, ex Russia). The surprise: 93% of it is AI. The rocket business is $370B — just 1.3% of total TAM.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="card p-4 sm:p-6">
+            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">TAM by Segment ($B)</h3>
+            <p className="text-xs text-slate-600 mb-4">The S-1 frames SpaceX as an AI company that happens to own a rocket and satellite business. AI infrastructure alone ($2.4T) is 6.5x the entire connectivity TAM.</p>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={tamBreakdown} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis type="number" stroke={C.dim} tick={{ fill: C.muted, fontSize: 11 }} tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}T` : `$${v}B`} />
+                <YAxis type="category" dataKey="segment" stroke={C.dim} tick={{ fill: C.muted, fontSize: 10 }} width={160} />
+                <Tooltip content={<Tip />} />
+                <Bar dataKey="value" name="TAM ($B)" radius={[0, 4, 4, 0]}>
+                  {tamBreakdown.map((d, i) => <Cell key={i} fill={d.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <ChartNote>Total TAM: $28.5T. AI: $26.5T (93%). Connectivity: $1.6T (5.6%). Space: $370B (1.3%). This framing justifies the premium multiple.</ChartNote>
+          </div>
+          <div className="card p-4 sm:p-6">
+            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">AI TAM Sub-Breakdown ($B)</h3>
+            <p className="text-xs text-slate-600 mb-4">Enterprise AI applications ($22.7T) dwarf every other category. SpaceX&apos;s play is to be the compute backbone — via Colossus clusters, the Grok API, and eventually orbital AI infrastructure.</p>
+            <div className="space-y-3 mt-2">
+              {tamDetail.map((item, i) => {
+                const segColor = item.parent === "AI" ? C.orange : item.parent === "Connectivity" ? C.cyan : C.blue;
+                const maxVal = 22700;
+                return (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="text-xs text-slate-500 w-36 flex-shrink-0">{item.name}</div>
+                    <div className="flex-1 prog-bar">
+                      <div className="h-full rounded-full" style={{ width: `${(item.value / maxVal) * 100}%`, background: segColor }} />
+                    </div>
+                    <div className="text-xs font-bold w-14 text-right" style={{ color: segColor }}>
+                      {item.value >= 1000 ? `$${(item.value / 1000).toFixed(1)}T` : `$${item.value}B`}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <div className="accent-rule" />
+
+      {/* ══════ STRATEGIC DEALS ══════ */}
+      <Section title="Strategic Deals" sub="Three major deals disclosed in the S-1 — totaling over $94B in value. The Anthropic compute contract alone is $15B/year, instantly making SpaceX one of the largest AI cloud providers.">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          {strategicDeals.map((deal, i) => (
+            <div key={i} className="ipo-card" style={{ borderColor: `${deal.color}25` }}>
+              <div className="text-[9px] tracking-[0.15em] uppercase mb-2" style={{ color: deal.color }}>Strategic Deal</div>
+              <div className="text-lg font-bold text-white mb-1">{deal.name}</div>
+              <div className="text-2xl font-bold mb-2" style={{ color: deal.color }}>
+                {deal.value >= 1000 ? `$${(deal.value / 1000).toFixed(0)}B` : `$${deal.value}M`}
+                {deal.name === "Anthropic Compute" ? "/yr" : ""}
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">{deal.note}</p>
+            </div>
+          ))}
+        </div>
+        <div className="card p-4 sm:p-6">
+          <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-3">Anthropic Compute Deal — The $45B Contract</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: "Monthly Fee", value: "$1.25B", desc: "Anthropic pays SpaceX to train on Colossus/Colossus II" },
+              { label: "Annualized", value: "$15B/yr", desc: "One of the largest AI cloud contracts in history" },
+              { label: "Total Contract", value: "$45B", desc: "Through May 2029 — 3 year term, 90-day termination" },
+              { label: "Infrastructure", value: "~220K GPUs", desc: "Colossus (H100) + Colossus II (GB200/GB300) combined" },
+            ].map((s, i) => (
+              <div key={i} className="p-4 rounded-lg bg-slate-900/50 border border-cyan-500/10">
+                <div className="text-[9px] tracking-[0.12em] text-slate-500 uppercase mb-1">{s.label}</div>
+                <div className="text-xl font-bold text-cyan-400 mb-1">{s.value}</div>
+                <div className="text-xs text-slate-600">{s.desc}</div>
+              </div>
+            ))}
+          </div>
+          <ChartNote>Anthropic retains all IP. SpaceX provides infrastructure only. The deal validates Colossus as world-class AI compute — and generates significant cash flow to offset AI segment losses.</ChartNote>
+        </div>
+      </Section>
+
+      <div className="accent-rule" />
+
+      {/* ══════ DEBT & GOVERNANCE ══════ */}
+      <Section title="Debt Structure & Governance" sub="SpaceX has $29.1B in total debt — including a $20B bridge loan due September 2027 that must be refinanced (or repaid with IPO proceeds). Musk holds 10:1 supervoting Class B shares.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="card p-4 sm:p-6">
+            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Debt Breakdown ($M)</h3>
+            <p className="text-xs text-slate-600 mb-4">The $20B Goldman Sachs bridge loan (signed March 2, 2026) is the critical near-term item — due September 2027. IPO proceeds or debt refinancing must address it.</p>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={debtStructure} layout="vertical" margin={{ left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis type="number" stroke={C.dim} tick={{ fill: C.muted, fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
+                <YAxis type="category" dataKey="name" stroke={C.dim} tick={{ fill: C.muted, fontSize: 10 }} width={190} />
+                <Tooltip content={<Tip />} />
+                <Bar dataKey="value" name="Outstanding ($M)" radius={[0, 4, 4, 0]}>
+                  {debtStructure.map((d, i) => <Cell key={i} fill={d.urgent ? C.red : C.blue} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <ChartNote>Total principal: $29.1B. SpaceX Credit Facility ($5B capacity) is currently undrawn. $9.1B AI infra financing reflects failed AI asset sale-leaseback that converted to debt.</ChartNote>
+          </div>
+          <div className="card p-4 sm:p-6">
+            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-3">Share Structure & Governance</h3>
+            <div className="space-y-3">
+              {[
+                { label: "Class A (1 vote/share)", detail: "2,882M outstanding. Public float. No special rights.", color: C.blue },
+                { label: "Class B (10 votes/share)", detail: "2,421M outstanding. Musk controlled. Elects 51%+ of board. Converts to Class A on transfer.", color: C.orange },
+                { label: "Class C (→ Class A at IPO)", detail: "494M shares reclassified to Class A upon IPO completion.", color: C.dim },
+                { label: "Preferred Stock (→ Class A + B)", detail: "$7B book value. Converts upon IPO (Preferred Conversion). ~6.7B new shares pro forma.", color: C.yellow },
+                { label: "Controlled Company", detail: "Musk's Class B shares give effective voting control. Board need not have independent majority.", color: C.red },
+                { label: "Mandatory Arbitration", detail: "No jury trials, no class actions, 3% derivative threshold. Governance concerns cited as top risk.", color: C.red },
+              ].map((item, i) => (
+                <div key={i} className="flex gap-3 items-start p-3 rounded-lg bg-slate-900/40 border border-white/5">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ background: item.color }} />
+                  <div>
+                    <div className="text-xs font-medium text-white mb-0.5">{item.label}</div>
+                    <div className="text-xs text-slate-500">{item.detail}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <div className="accent-rule" />
+
+      {/* ══════ INTERNAL VS CUSTOMER LAUNCHES ══════ */}
+      <Section title="Launch Economics" sub="Of SpaceX's 170 launches in 2025, only 43 (25%) were for paying customers. The majority — 122 — were internal Starlink constellation deployments, which generate no Space segment revenue but directly power the $11.4B Connectivity business.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="card p-4 sm:p-6">
+            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-1">Internal vs. Customer Launches</h3>
+            <p className="text-xs text-slate-600 mb-4">SpaceX doesn&apos;t recognize inter-segment revenue for Starlink deployments. The rocket business looks smaller than it is — but internally it&apos;s the enabler of a $11.4B revenue stream.</p>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={internalVsCustomer}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+                <XAxis dataKey="year" stroke={C.dim} tick={{ fill: C.muted, fontSize: 11 }} />
+                <YAxis stroke={C.dim} tick={{ fill: C.muted, fontSize: 11 }} />
+                <Tooltip content={<Tip />} />
+                <Legend wrapperStyle={{ color: C.muted, fontSize: 12 }} />
+                <Bar dataKey="internal" name="Internal (Starlink)" stackId="a" fill={C.cyan} />
+                <Bar dataKey="customer" name="Customer Launches" stackId="a" fill={C.blue} radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <ChartNote>Customer launches drive Space segment revenue ($4.1B in 2025). Internal launches fund Connectivity growth. Both are essential — but only customer launches appear in the P&L.</ChartNote>
+          </div>
+          <div className="card p-4 sm:p-6">
+            <h3 className="text-xs tracking-[0.12em] text-slate-500 uppercase mb-3">X Platform Metrics (AI Segment)</h3>
+            <p className="text-xs text-slate-600 mb-4">X is the distribution and data engine for Grok — 350M daily posts create a proprietary real-time training stream. X + Grok form a flywheel no other AI company can replicate.</p>
+            <div className="space-y-3">
+              {xPlatformMetrics.map((item, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-white/5">
+                  <span className="text-sm text-slate-400">{item.metric}</span>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-white">{item.value}</div>
+                    <div className="text-[10px] text-slate-600">{item.note}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </Section>
 
       <div className="accent-rule" />
 
       {/* ══════ STARSHIP TESTS ══════ */}
-      <Section title="Starship Flight Tests" sub="Seven Integrated Flight Tests in under two years — from total failure to tower catch. The S-1 notes Starship is designed to reduce orbital access cost by 99%+ vs. historical averages.">
+      <Section title="Starship Flight Tests" sub="Eleven Integrated Flight Tests across 2023–2026. From total failure to commercial payload readiness in under 3 years — the fastest development timeline for a super-heavy launch vehicle in history.">
         <div className="card overflow-x-auto">
           <table className="w-full sx-table min-w-[480px]">
             <thead><tr>{["Flight", "Date", "Result", "Milestone"].map((h) => <th key={h}>{h}</th>)}</tr></thead>
             <tbody>
-              {[
-                { f: "IFT-1", d: "Apr 2023", r: "FAILURE", c: C.red, detail: "FTS activated at T+4 min — vehicle tumbled after liftoff" },
-                { f: "IFT-2", d: "Nov 2023", r: "PARTIAL", c: C.yellow, detail: "First successful stage separation achieved" },
-                { f: "IFT-3", d: "Mar 2024", r: "PARTIAL", c: C.yellow, detail: "Reached space — valuable re-entry data collected" },
-                { f: "IFT-4", d: "Jun 2024", r: "SUCCESS", c: C.green, detail: "Both stages survived — first full-profile flight" },
-                { f: "IFT-5", d: "Oct 2024", r: "HISTORIC", c: C.cyan, detail: "Super Heavy caught by Mechazilla tower arms" },
-                { f: "IFT-6", d: "Nov 2024", r: "SUCCESS", c: C.green, detail: "Ship orbited, in-space Raptor relight, controlled splashdown" },
-                { f: "IFT-7", d: "Jan 2025", r: "FAILURE", c: C.red, detail: "Propellant leak — Ship lost over Turks & Caicos, booster catch aborted" },
-              ].map((fl, i) => (
+              {starshipTests.map((fl, i) => (
                 <tr key={i}>
                   <td className="font-mono text-white font-semibold">{fl.f}</td>
                   <td>{fl.d}</td>
@@ -886,9 +1152,10 @@ export default function SpaceXDashboard() {
               ))}
             </tbody>
           </table>
-          <ChartNote>Starship produces 16.7 million lbf of thrust — roughly 2x Saturn V. The S-1 states Starship is capable of delivering 150,000+ kg to LEO. Its rapid iteration reflects SpaceX&apos;s hardware-rich development philosophy.</ChartNote>
+          <ChartNote>Starship produces 16.7M lbf of thrust — ~2x Saturn V. The S-1 confirms 11 flight tests as of filing. Commercial payload operations expected H2 2026. Target cost: $67/kg to LEO (Falcon 9 today: $2,700/kg; historical avg: $18,500/kg).</ChartNote>
         </div>
       </Section>
+
 
       <div className="accent-rule" />
 
@@ -927,13 +1194,13 @@ export default function SpaceXDashboard() {
             { val: "170", unit: "", label: "2025 orbital launches (record)" },
             { val: "2,213", unit: "t", label: "Mass to orbit 2025 (metric tons)" },
             { val: "10.3M", unit: "", label: "Starlink subscribers (Q1 '26)" },
-            { val: "9,600", unit: "", label: "Starlink satellites in orbit" },
-            { val: "164", unit: "", label: "Countries with Starlink service" },
             { val: "$7.2B", unit: "", label: "Connectivity Adj. EBITDA (2025)" },
-            { val: "34", unit: "x", label: "Single booster reuse record (B1067)" },
+            { val: "11", unit: "", label: "Starship flight tests to date" },
             { val: "650+", unit: "", label: "Total orbital launches ever" },
+            { val: "$1.25B", unit: "/mo", label: "Anthropic compute contract" },
+            { val: "$29.1B", unit: "", label: "Total debt outstanding" },
+            { val: "550M", unit: "", label: "X Monthly Active Users (Q1 '26)" },
             { val: "$102B", unit: "", label: "Total assets (Mar 31, 2026)" },
-            { val: "$28.4B", unit: "", label: "Contracted backlog" },
           ].map((s, i) => (
             <div key={i} className="stat-card p-4 sm:p-5 text-center">
               <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5">
