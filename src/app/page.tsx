@@ -223,14 +223,14 @@ const milestones = [
 ];
 
 const C = {
-  blue:   "#2563eb",
-  sky:    "#0891b2",
-  green:  "#059669",
-  orange: "#ea580c",
-  red:    "#dc2626",
-  yellow: "#d97706",
-  violet: "#7c3aed",
-  slate:  "#475569",
+  blue:   "#3b82f6",
+  sky:    "#06b6d4",
+  green:  "#22c55e",
+  orange: "#f97316",
+  red:    "#ef4444",
+  yellow: "#eab308",
+  violet: "#a855f7",
+  slate:  "#64748b",
   muted:  "#94a3b8",
   dim:    "#94a3b8",
   grid:   "rgba(15,23,42,0.04)",
@@ -377,8 +377,8 @@ function Nav({ active }: { active: string }) {
 
 function Section({ title, sub, children, id }: { title: string; sub?: string; children: React.ReactNode; id?: string }) {
   return (
-    <section id={id} className="py-14 md:py-20 px-4 sm:px-6 md:px-12 max-w-[1400px] mx-auto">
-      <div className="mb-8 md:mb-10">
+    <section id={id} className="py-10 sm:py-14 md:py-20 px-4 sm:px-6 md:px-12 max-w-[1400px] mx-auto">
+      <div className="mb-6 sm:mb-8 md:mb-10">
         <h2 className="section-title">{title}</h2>
         {sub && <p className="section-sub">{sub}</p>}
         <div className="section-bar" />
@@ -398,27 +398,27 @@ const GRID = { strokeDasharray: "3 3", stroke: C.grid };
 // ─── KPI DATA ────────────────────────────────────────────────────────────────
 
 const kpis = [
-  { target: 18.7, fmt: (n: number) => `$${n.toFixed(1)}B`, label: "2025 Revenue", color: C.sky },
-  { target: 9.2,  fmt: (n: number) => `$${n.toFixed(1)}B`, label: "2025 Gross Profit", color: C.green },
-  { target: 10.3, fmt: (n: number) => `${n.toFixed(1)}M`,  label: "Starlink Subs Q1 '26", color: "#93c5fd" },
-  { target: 170,  fmt: (n: number) => `${Math.round(n)}`,  label: "2025 Orbital Launches", color: C.orange },
-  { target: 28.4, fmt: (n: number) => `$${n.toFixed(1)}B`, label: "Contracted Backlog", color: C.sky },
-  { target: 22,   fmt: (n: number) => `${Math.round(n)}K+`,label: "Employees (Mar '26)", color: C.yellow },
+  { target: 18.7, fmt: (n: number) => `$${n.toFixed(1)}B`, label: "2025 Revenue",          color: "#06b6d4" },
+  { target: 9.2,  fmt: (n: number) => `$${n.toFixed(1)}B`, label: "2025 Gross Profit",     color: "#22c55e" },
+  { target: 10.3, fmt: (n: number) => `${n.toFixed(1)}M`,  label: "Starlink Subs Q1 '26", color: "#60a5fa" },
+  { target: 170,  fmt: (n: number) => `${Math.round(n)}`,  label: "2025 Orbital Launches", color: "#f97316" },
+  { target: 28.4, fmt: (n: number) => `$${n.toFixed(1)}B`, label: "Contracted Backlog",    color: "#a78bfa" },
+  { target: 22,   fmt: (n: number) => `${Math.round(n)}K+`,label: "Employees (Mar '26)",   color: "#fbbf24" },
 ];
 
 const byTheNumbers = [
-  { target: 18.7, fmt: (n: number) => `$${n.toFixed(1)}B`, unit: "", label: "2025 Revenue (S-1 actual)" },
-  { target: 49.4, fmt: (n: number) => `${n.toFixed(1)}`,   unit: "%",  label: "2025 Gross Margin" },
-  { target: 170,  fmt: (n: number) => `${Math.round(n)}`,  unit: "",   label: "2025 orbital launches (record)" },
-  { target: 2213, fmt: (n: number) => `${Math.round(n).toLocaleString()}`, unit: "t", label: "Metric tons to orbit, 2025" },
-  { target: 10.3, fmt: (n: number) => `${n.toFixed(1)}M`,  unit: "",   label: "Starlink subscribers (Q1 '26)" },
-  { target: 7.2,  fmt: (n: number) => `$${n.toFixed(1)}B`, unit: "",   label: "Connectivity Adj. EBITDA (2025)" },
-  { target: 11,   fmt: (n: number) => `${Math.round(n)}`,  unit: "",   label: "Starship flight tests to date" },
-  { target: 650,  fmt: (n: number) => `${Math.round(n)}+`, unit: "",   label: "Total orbital launches ever" },
-  { target: 1.25, fmt: (n: number) => `$${n.toFixed(2)}B`, unit: "/mo",label: "Anthropic compute contract" },
-  { target: 29.1, fmt: (n: number) => `$${n.toFixed(1)}B`, unit: "",   label: "Total debt outstanding" },
-  { target: 550,  fmt: (n: number) => `${Math.round(n)}M`, unit: "",   label: "X Monthly Active Users (Q1 '26)" },
-  { target: 102,  fmt: (n: number) => `$${Math.round(n)}B`,unit: "",   label: "Total assets (Mar 31, 2026)" },
+  { target: 18.7, fmt: (n: number) => `$${n.toFixed(1)}B`, unit: "",    label: "2025 Revenue",              color: "#3b82f6" },
+  { target: 49.4, fmt: (n: number) => `${n.toFixed(1)}`,   unit: "%",   label: "2025 Gross Margin",         color: "#22c55e" },
+  { target: 170,  fmt: (n: number) => `${Math.round(n)}`,  unit: "",    label: "2025 Orbital Launches",     color: "#f97316" },
+  { target: 2213, fmt: (n: number) => `${Math.round(n).toLocaleString()}`, unit: "t", label: "Metric Tons to Orbit 2025", color: "#06b6d4" },
+  { target: 10.3, fmt: (n: number) => `${n.toFixed(1)}M`,  unit: "",    label: "Starlink Subscribers Q1'26",color: "#10b981" },
+  { target: 7.2,  fmt: (n: number) => `$${n.toFixed(1)}B`, unit: "",    label: "Connectivity Adj. EBITDA",  color: "#eab308" },
+  { target: 11,   fmt: (n: number) => `${Math.round(n)}`,  unit: "",    label: "Starship Flight Tests",     color: "#ef4444" },
+  { target: 650,  fmt: (n: number) => `${Math.round(n)}+`, unit: "",    label: "Total Orbital Launches",    color: "#a855f7" },
+  { target: 1.25, fmt: (n: number) => `$${n.toFixed(2)}B`, unit: "/mo", label: "Anthropic Contract/Month",  color: "#06b6d4" },
+  { target: 29.1, fmt: (n: number) => `$${n.toFixed(1)}B`, unit: "",    label: "Total Debt Outstanding",    color: "#f43f5e" },
+  { target: 550,  fmt: (n: number) => `${Math.round(n)}M`, unit: "",    label: "X Monthly Active Users",    color: "#3b82f6" },
+  { target: 102,  fmt: (n: number) => `$${Math.round(n)}B`,unit: "",    label: "Total Assets (Mar '26)",    color: "#22c55e" },
 ];
 
 // ─── MAIN ────────────────────────────────────────────────────────────────────
@@ -486,6 +486,34 @@ export default function SpaceXDashboard() {
         </div>
       </div>
 
+      {/* ══════ BY THE NUMBERS ══════ */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 pt-12 pb-4">
+        <div className="mb-7">
+          <h2 className="section-title">By The Numbers</h2>
+          <p className="section-sub">Official figures from the SpaceX S-1 filing. Numbers animate as you scroll.</p>
+          <div className="section-bar" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          {byTheNumbers.map((s, i) => (
+            <div key={i} className="rounded-2xl p-4 sm:p-5 text-center border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg cursor-default"
+              style={{
+                background: `linear-gradient(145deg, ${s.color}14 0%, #fff 70%)`,
+                borderColor: `${s.color}35`,
+                borderTopWidth: 3,
+                borderTopColor: s.color,
+              }}>
+              <div className="text-2xl sm:text-3xl font-extrabold mb-1 kpi-number tracking-tight" style={{ color: s.color }}>
+                <AnimNum target={s.target} fmt={s.fmt} />
+                {s.unit && <span className="text-sm font-bold ml-0.5" style={{ color: s.color, opacity: 0.75 }}>{s.unit}</span>}
+              </div>
+              <div className="text-[10px] sm:text-xs text-slate-500 leading-tight font-medium">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="accent-rule mt-10" />
+
       {/* ══════ IPO OVERVIEW ══════ */}
       <Section id="overview" title="IPO Overview" sub="SpaceX filed its S-1 with the SEC in May 2026. Key facts from the actual filing.">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -510,8 +538,8 @@ export default function SpaceXDashboard() {
 
       {/* ══════ FULL P&L ══════ */}
       <Section id="pnl" title="Profit & Loss" sub="Official financials from the S-1. Revenue is growing fast — but so is R&D spend as SpaceX pours capital into xAI compute infrastructure.">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-          <div className="card p-5 sm:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 mb-4 sm:mb-5">
+          <div className="card p-4 sm:p-6">
             <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Revenue vs. Gross Profit</h3>
             <p className="text-xs text-slate-500 mb-4 leading-relaxed">Gross margin expanded from 41.2% → 42.9% → 49.4% as Connectivity (Starlink) became a larger share of the business.</p>
             <ResponsiveContainer width="100%" height={300}>
@@ -1337,22 +1365,6 @@ export default function SpaceXDashboard() {
         </div>
       </Section>
 
-      <div className="accent-rule" />
-
-      {/* ══════ BY THE NUMBERS ══════ */}
-      <Section id="numbers" title="By The Numbers" sub="Official figures from the SpaceX S-1 filing. Numbers animate as you scroll into view.">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {byTheNumbers.map((s, i) => (
-            <div key={i} className="stat-card p-5 sm:p-6 text-center">
-              <div className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1 kpi-number">
-                <AnimNum target={s.target} fmt={s.fmt} />
-                {s.unit && <span className="text-sm ml-0.5" style={{ color: C.blue }}>{s.unit}</span>}
-              </div>
-              <div className="text-[10px] text-slate-400 leading-tight">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </Section>
 
       <div className="accent-rule" />
 

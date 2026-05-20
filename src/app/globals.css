@@ -376,4 +376,18 @@ body {
   .sx-table th, .sx-table td { padding: 9px 10px; }
   .section-title { font-size: 1.35rem; }
   .nav-link { font-size: 0.62rem; padding: 4px 8px; }
+  .kpi-card { padding: 14px 12px; border-radius: 12px; }
+  .ipo-card { padding: 16px 18px; border-radius: 14px; }
+  .card { border-radius: 14px; }
+  .stat-card { border-radius: 14px; }
+  .site-nav-inner { padding: 0 16px; gap: 12px; }
+  .nav-brand { font-size: 0.62rem; padding: 3px 8px; }
+  .hero-section { min-height: 88vh; }
+  /* Reduce chart container padding on mobile */
+  .card .recharts-responsive-container { margin: 0 -4px; }
+}
+
+@media (max-width: 380px) {
+  .section-title { font-size: 1.2rem; }
+  .kpi-strip .grid { gap: 10px; }
 }
