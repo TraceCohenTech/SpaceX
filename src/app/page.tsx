@@ -6,6 +6,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, ComposedChart, ReferenceLine,
+  PieChart, Pie,
 } from "recharts";
 
 // ─── ACTUAL S-1 DATA (filed May 20, 2026) ──────────────────────────────────
@@ -79,12 +80,19 @@ const rdExpansion = [
   { year: "2025", rd: 8643, rdPct: 46.3, capexAi: 12727 },
 ];
 
-const revenueForecasts = [
-  { year: "2023", revenue: 10387, type: "actual" },
-  { year: "2024", revenue: 13100, type: "actual" },
-  { year: "2025", revenue: 18674, type: "actual" },
-  { year: "2026E", revenue: 37500, type: "estimate" },
-  { year: "2027E", revenue: 58900, type: "estimate" },
+const revenueModelData = [
+  { year: "2024A", starlink: 7700, space: 5400, ai: 0,    anthropic: 0,     google: 0 },
+  { year: "2025A", starlink: 11400, space: 4100, ai: 3200, anthropic: 0,    google: 0 },
+  { year: "2026E", starlink: 17100, space: 4400, ai: 3600, anthropic: 8750, google: 3700 },
+  { year: "2027E", starlink: 23900, space: 4900, ai: 4100, anthropic: 15000, google: 11000 },
+];
+
+const mix2027E = [
+  { name: "Starlink",        value: 23900, color: "#06b6d4" },
+  { name: "Space",           value: 4900,  color: "#3b82f6" },
+  { name: "AI (xAI)",        value: 4100,  color: "#f97316" },
+  { name: "Anthropic Deal",  value: 15000, color: "#22c55e" },
+  { name: "Google Deal",     value: 11000, color: "#eab308" },
 ];
 
 const ppeBreakdown = [
@@ -678,40 +686,180 @@ export default function SpaceXDashboard() {
 
       <div className="accent-rule" />
 
-      {/* ══════ REVENUE FORECAST ══════ */}
-      <Section id="forecast" title="Revenue Forecast" sub="Actuals through 2025 (S-1/A), analyst consensus 2026E–2027E. Goldman Sachs expects the AI segment alone to hit $15.6B in 2026 and $34.5B in 2027, driving 100%+ total revenue growth.">
-        <div className="card p-5 sm:p-6 mb-5">
-          <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-1">Revenue Trajectory — Actual + Estimates</h3>
-          <p className="text-xs text-slate-500 mb-4 leading-relaxed">Blue bars = S-1/A actuals. Orange bars = analyst consensus estimates. 2026E implies 100%+ growth as Anthropic compute ($15B/yr) fully ramps, Starlink adds 5M+ subs, and xAI commercial contracts scale.</p>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={revenueForecasts}>
-              <CartesianGrid {...GRID} />
-              <XAxis dataKey="year" {...AXIS} />
-              <YAxis {...AXIS} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}B`} />
-              <Tooltip content={<Tip />} />
-              <ReferenceLine x="2025" stroke="#cbd5e1" strokeDasharray="4 4" />
-              <Bar dataKey="revenue" name="Revenue ($M)" radius={[4, 4, 0, 0]}>
-                {revenueForecasts.map((d, i) => (
-                  <Cell key={i} fill={d.type === "estimate" ? C.orange : C.blue} fillOpacity={d.type === "estimate" ? 0.8 : 1} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          <ChartNote>2023: $10.4B | 2024: $13.1B (S-1/A revised) | 2025: $18.7B | 2026E: $37.5B (+101% YoY) | 2027E: $58.9B (+57% YoY). Sources: SpaceX S-1/A, Goldman Sachs, Evercore ISI consensus.</ChartNote>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { year: "2026E", revenue: "$37.5B", growth: "+101% YoY", driver: "AI scales to ~$15.6B (Goldman). Anthropic compute at full $15B/yr run-rate. Starlink passes 15M subscribers. New Space Force contracts kick in.", color: C.orange },
-            { year: "2027E", revenue: "$58.9B", growth: "+57% YoY", driver: "AI reaches ~$34.5B (Goldman). Starlink 20M+ subs. Starship commercial payloads begin revenue contribution. Cursor ($60B) integration.", color: C.sky },
-            { year: "2030E", revenue: "$474B", growth: "~25x from 2025", driver: "Goldman Sachs base case: AI $300B+, Starlink 50M+ subscribers, orbital AI compute infrastructure online, Starship fully operational.", color: C.blue },
-          ].map((s, i) => (
-            <div key={i} className="ipo-card" style={{ borderColor: `${s.color}30` }}>
-              <div className="text-[10px] tracking-[0.15em] uppercase mb-1 font-semibold" style={{ color: s.color }}>{s.year}</div>
-              <div className="text-2xl font-bold text-slate-900 mb-0.5">{s.revenue}</div>
-              <div className="text-sm font-semibold mb-2" style={{ color: s.color }}>{s.growth}</div>
-              <p className="text-xs text-slate-500 leading-relaxed">{s.driver}</p>
+      {/* ══════ REVENUE MODEL ══════ */}
+      <Section id="forecast" title="Revenue Model: 2024A–2027E" sub="Segment-level revenue model with analyst estimates. Compute partnerships (Anthropic + Google) scale to $26B by 2027E — 44% of total revenue. Starlink remains the foundation at $23.9B.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+
+          {/* Left: stacked bar chart */}
+          <div className="card p-5 sm:p-6">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold">Total Revenue by Segment ($B)</h3>
+              <div className="flex-shrink-0 ml-3 px-4 py-2.5 rounded-2xl text-center" style={{ background: "linear-gradient(135deg,#1e3a5f,#0f172a)" }}>
+                <div className="text-[8px] text-white/50 uppercase tracking-widest leading-tight mb-0.5">2024A–2027E<br/>Revenue CAGR</div>
+                <div className="text-3xl font-bold text-white">65%</div>
+              </div>
             </div>
-          ))}
+            <div className="flex flex-wrap gap-3 mb-3">
+              {[
+                { name: "Starlink", color: "#06b6d4" },
+                { name: "Space", color: "#3b82f6" },
+                { name: "AI (xAI)", color: "#f97316" },
+                { name: "Anthropic Deal", color: "#22c55e" },
+                { name: "Google Deal", color: "#eab308" },
+              ].map((s) => (
+                <span key={s.name} className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                  <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: s.color }} />{s.name}
+                </span>
+              ))}
+            </div>
+            <ResponsiveContainer width="100%" height={310}>
+              <BarChart data={revenueModelData} barSize={56}>
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="year" {...AXIS} />
+                <YAxis {...AXIS} tickFormatter={(v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}B` : "$0"} domain={[0, 65000]} />
+                <Tooltip content={<Tip />} />
+                <Bar dataKey="starlink"  name="Starlink ($M)"       stackId="a" fill="#06b6d4" />
+                <Bar dataKey="space"     name="Space ($M)"          stackId="a" fill="#3b82f6" />
+                <Bar dataKey="ai"        name="AI (xAI) ($M)"       stackId="a" fill="#f97316" />
+                <Bar dataKey="anthropic" name="Anthropic Deal ($M)"  stackId="a" fill="#22c55e" />
+                <Bar dataKey="google"    name="Google Deal ($M)"     stackId="a" fill="#eab308" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-4 gap-1 mt-3 pt-3 border-t border-slate-100">
+              {[
+                { year: "2024A", total: "$13.1B", growth: "—" },
+                { year: "2025A", total: "$18.7B", growth: "+43%" },
+                { year: "2026E", total: "$37.5B", growth: "+101%" },
+                { year: "2027E", total: "$58.9B", growth: "+57%" },
+              ].map((s) => (
+                <div key={s.year} className="text-center">
+                  <div className="text-[9px] text-slate-400 uppercase tracking-wide font-medium">{s.year}</div>
+                  <div className="text-xs font-bold text-slate-900">{s.total}</div>
+                  <div className="text-[10px] font-semibold" style={{ color: s.growth === "—" ? "#94a3b8" : "#22c55e" }}>{s.growth} YoY</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: segment table */}
+          <div className="card overflow-x-auto">
+            <div className="p-5 pb-2">
+              <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold">Revenue by Segment ($B)</h3>
+            </div>
+            <table className="w-full sx-table min-w-[420px]">
+              <thead>
+                <tr>
+                  <th>Segment</th>
+                  <th className="text-right">2024A</th>
+                  <th className="text-right">2025A</th>
+                  <th className="text-right" style={{ color: "#f97316" }}>2026E</th>
+                  <th className="text-right" style={{ color: "#f97316" }}>2027E</th>
+                  <th className="text-right">&apos;24–&apos;27 CAGR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {([
+                  { seg: "Starlink",       color: "#06b6d4", v: ["$7.7",  "$11.4", "$17.1",  "$23.9"],  cagr: "45%",  pos: true  },
+                  { seg: "Space",          color: "#3b82f6", v: ["$5.4",  "$4.1",  "$4.4",   "$4.9"],   cagr: "(4%)", pos: false },
+                  { seg: "AI (xAI)",       color: "#f97316", v: ["—",     "$3.2",  "$3.6",   "$4.1"],   cagr: "—",    pos: true  },
+                  { seg: "Anthropic Deal", color: "#22c55e", v: ["—",     "—",     "$8.75",  "$15.0"],  cagr: "—",    pos: true  },
+                  { seg: "Google Deal",    color: "#eab308", v: ["—",     "—",     "$3.7",   "$11.0"],  cagr: "—",    pos: true  },
+                ] as { seg: string; color: string; v: string[]; cagr: string; pos: boolean }[]).map((row) => (
+                  <tr key={row.seg}>
+                    <td>
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: row.color }} />
+                        <span className="text-slate-700 font-medium">{row.seg}</span>
+                      </span>
+                    </td>
+                    {row.v.map((val, i) => <td key={i} className="text-right text-slate-600">{val}</td>)}
+                    <td className="text-right font-semibold" style={{ color: row.cagr === "—" ? "#94a3b8" : row.pos ? "#22c55e" : "#ef4444" }}>{row.cagr}</td>
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-slate-200">
+                  <td className="font-semibold text-slate-700 text-sm">Organic Subtotal</td>
+                  {["$13.1", "$18.7", "$25.1", "$32.9"].map((v, i) => (
+                    <td key={i} className="text-right font-semibold text-slate-700">{v}</td>
+                  ))}
+                  <td className="text-right font-semibold" style={{ color: "#22c55e" }}>36%</td>
+                </tr>
+                <tr style={{ background: "linear-gradient(90deg,#eff6ff,#f0fdf4)" }}>
+                  <td className="font-bold text-blue-700 text-sm">Total Revenue</td>
+                  <td className="text-right font-bold text-slate-900">$13.1</td>
+                  <td className="text-right font-bold text-slate-900">$18.7</td>
+                  <td className="text-right font-bold" style={{ color: "#f97316" }}>$37.5</td>
+                  <td className="text-right font-bold" style={{ color: "#f97316" }}>$58.9</td>
+                  <td className="text-right font-bold text-blue-600">65%</td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="px-5 pb-4 pt-1">
+              <ChartNote>² Space decline reflects internal Starlink deployments (65–70% of launches in 2025); external launch demand remains intact. Compute partnerships (Anthropic + Google) = 44% of 2027E total. Source: SpaceX S-1/A, analyst consensus.</ChartNote>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom: key takeaways + donut + summary */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="card p-5 sm:p-6">
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-4">Key Takeaways</h3>
+            <div className="space-y-4">
+              {[
+                { num: "1", color: "#06b6d4", text: "Starlink remains the largest revenue driver, scaling from $7.7B in 2024A to $23.9B in 2027E as subscriber count approaches 25M+." },
+                { num: "2", color: "#22c55e", text: "Compute partnerships (Anthropic + Google) ramp to $26.0B by 2027E — representing 44% of total revenue. The AI cloud thesis is materializing fast." },
+                { num: "3", color: "#f97316", text: "AI (xAI) contributes $4.1B by 2027E via Grok subscriptions, xAI API, and X advertising — a third organic revenue stream on top of Starlink and Space." },
+              ].map((item) => (
+                <div key={item.num} className="flex gap-3">
+                  <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-white mt-0.5" style={{ background: item.color }}>{item.num}</span>
+                  <p className="text-xs text-slate-500 leading-relaxed">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card p-5 sm:p-6">
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-0.5">2027E Revenue Mix</h3>
+            <p className="text-xs text-slate-400 mb-1">$58.9B total</p>
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie data={mix2027E} cx="50%" cy="50%" innerRadius={48} outerRadius={78} dataKey="value" paddingAngle={2}>
+                  {mix2027E.map((e, i) => <Cell key={i} fill={e.color} />)}
+                </Pie>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <Tooltip formatter={(v: any) => `$${(Number(v) / 1000).toFixed(1)}B`} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="space-y-1.5 mt-1">
+              {mix2027E.map((e) => (
+                <div key={e.name} className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-slate-500">
+                    <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: e.color }} />{e.name}
+                  </span>
+                  <span className="font-semibold text-slate-700">{Math.round(e.value / 58900 * 100)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card p-5 sm:p-6">
+            <h3 className="text-[11px] tracking-[0.12em] text-slate-400 uppercase font-semibold mb-4">Revenue Summary ($B)</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { year: "2024A", rev: "$13.1B", growth: "—",     est: false },
+                { year: "2025A", rev: "$18.7B", growth: "+43%",  est: false },
+                { year: "2026E", rev: "$37.5B", growth: "+101%", est: true  },
+                { year: "2027E", rev: "$58.9B", growth: "+57%",  est: true  },
+              ].map((s) => (
+                <div key={s.year} className="p-3 rounded-2xl border" style={{ background: s.est ? "#fff7ed" : "#f8fafc", borderColor: s.est ? "#fed7aa" : "#e2e8f0" }}>
+                  <div className="text-[9px] tracking-widest uppercase mb-1 font-semibold" style={{ color: s.est ? "#f97316" : "#64748b" }}>{s.year}</div>
+                  <div className="text-xl font-bold text-slate-900">{s.rev}</div>
+                  <div className="text-[9px] text-slate-400 uppercase tracking-wide mt-0.5">Total Revenue</div>
+                  <div className="text-sm font-bold mt-1.5" style={{ color: s.growth === "—" ? "#94a3b8" : "#22c55e" }}>{s.growth}</div>
+                  <div className="text-[9px] text-slate-400">YoY Growth</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </Section>
 
